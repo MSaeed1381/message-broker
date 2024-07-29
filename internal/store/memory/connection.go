@@ -1,8 +1,8 @@
 package memory
 
 import (
+	"github.com/MSaeed1381/message-broker/internal/model"
 	"sync"
-	"therealbroker/internal/model"
 )
 
 type ConnectionInMemory struct {

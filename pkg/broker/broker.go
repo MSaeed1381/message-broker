@@ -19,7 +19,7 @@ type Message struct {
 	Expiration time.Duration
 }
 
-// The whole implementation should be thread-safe
+// Broker The whole implementation should be thread-safe
 // If any problem occurred, return the proper error based on errors.go
 type Broker interface {
 	io.Closer

@@ -2,11 +2,11 @@ package memory
 
 import (
 	"context"
+	"github.com/MSaeed1381/message-broker/internal/model"
+	"github.com/MSaeed1381/message-broker/internal/store"
+	"github.com/MSaeed1381/message-broker/internal/utils"
+	"github.com/MSaeed1381/message-broker/pkg/broker"
 	"sync"
-	"therealbroker/internal/model"
-	"therealbroker/internal/store"
-	"therealbroker/internal/utils"
-	"therealbroker/pkg/broker"
 	"time"
 )
 

@@ -7,6 +7,20 @@ interface. There are unit tests to specify requirements and also validate your i
 # Roadmap
 - [ ] Implement `broker.Broker` interface and pass all tests (Use memory for database)
 - [ ] Create *dockerfile* and *docker-compose* files for your deployment
+
+## run Dockerfile
+```shell
+docker build -t broker -f ./build/Dockerfile .
+```
+
+
+## run docker-compose
+
+```shell
+cd deployments
+docker compose up
+```
+
 - [ ] Add basic logs and prometheus metrics
   - Metrics for each RPCs:
     - `method_count` to show count of failed/successful RPC calls

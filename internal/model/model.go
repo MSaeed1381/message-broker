@@ -1,8 +1,8 @@
 package model
 
 import (
+	"github.com/MSaeed1381/message-broker/pkg/broker"
 	"sync"
-	"therealbroker/pkg/broker"
 	"time"
 )
 

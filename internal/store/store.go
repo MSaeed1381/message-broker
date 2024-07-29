@@ -3,8 +3,8 @@ package store
 import (
 	"context"
 	"fmt"
-	"therealbroker/internal/model"
-	"therealbroker/pkg/broker"
+	"github.com/MSaeed1381/message-broker/internal/model"
+	"github.com/MSaeed1381/message-broker/pkg/broker"
 )
 
 // Message Store Errors
