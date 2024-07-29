@@ -34,8 +34,9 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 		return 0, broker.ErrUnavailable
 	}
 
-	topic, err := m.Topics.GetBySubject(subject)
+	topic, err := m.Topics.GetBySubject(ctx, subject)
 
+	// TODO AS function to check error
 	if err != nil {
 		topic = &model.Topic{
 			Subject:     subject,
@@ -43,18 +44,18 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 			Connections: make([]*model.Connection, 10),
 		}
 
-		err := m.Topics.Save(topic)
+		err := m.Topics.Save(ctx, topic)
 		if err != nil {
 			return 0, err
 		}
 	}
 
-	messageId, err := m.Topics.SaveMessage(subject, &msg)
+	messageId, err := m.Topics.SaveMessage(ctx, subject, &msg)
 	if err != nil {
 		return 0, err
 	}
 
-	connections, err := m.Topics.GetOpenConnections(subject)
+	connections, err := m.Topics.GetOpenConnections(ctx, subject)
 	if err != nil {
 		return 0, err
 	}
@@ -74,7 +75,7 @@ func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.M
 		return nil, broker.ErrUnavailable
 	}
 
-	topic, err := m.Topics.GetBySubject(subject)
+	topic, err := m.Topics.GetBySubject(ctx, subject)
 	if err != nil {
 		topic = &model.Topic{
 			Subject:     subject,
@@ -82,17 +83,22 @@ func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.M
 			Connections: make([]*model.Connection, 0),
 		}
 
-		err := m.Topics.Save(topic)
+		err := m.Topics.Save(ctx, topic)
 		if err != nil {
 			return nil, err
 		}
 	}
 
+	// TODO put size as constant in config file
 	result := make(chan broker.Message, 10000)
 
-	err = m.Topics.SaveConnection(subject, &model.Connection{Mu: sync.Mutex{},
-		Channel: &result,
-	})
+	err = m.Topics.SaveConnection(
+		ctx,
+		subject,
+		&model.Connection{
+			Mu:      sync.Mutex{},
+			Channel: &result,
+		})
 
 	if err != nil {
 		return nil, err
@@ -106,7 +112,7 @@ func (m *Module) Fetch(ctx context.Context, subject string, id int) (broker.Mess
 		return broker.Message{}, broker.ErrUnavailable
 	}
 
-	msg, err := m.Topics.GetMessage(uint64(id), subject)
+	msg, err := m.Topics.GetMessage(ctx, uint64(id), subject)
 	if err != nil {
 		return broker.Message{}, broker.ErrInvalidID
 	}

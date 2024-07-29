@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"fmt"
 	"therealbroker/internal/model"
 	"therealbroker/pkg/broker"
@@ -40,8 +41,8 @@ func (e ErrMessageInvalid) Error() string {
 
 // Message Save message With Broker Message and return Broker Message From Data Store
 type Message interface {
-	Save(message *broker.Message) (uint64, error)
-	GetByID(id int) (*model.Message, error)
+	Save(ctx context.Context, message *broker.Message) (uint64, error)
+	GetByID(ctx context.Context, id int) (*model.Message, error)
 }
 
 // Topic Store Errors
@@ -64,10 +65,10 @@ func (e ErrTopicAlreadyExists) Error() string {
 }
 
 type Topic interface {
-	Save(topic *model.Topic) error
-	GetBySubject(subject string) (*model.Topic, error)
-	GetOpenConnections(subject string) ([]*model.Connection, error)
-	SaveMessage(subject string, message *broker.Message) (uint64, error)
-	GetMessage(messageId uint64, subject string) (*model.Message, error)
-	SaveConnection(subject string, connection *model.Connection) error
+	Save(ctx context.Context, topic *model.Topic) error
+	GetBySubject(ctx context.Context, subject string) (*model.Topic, error)
+	GetOpenConnections(ctx context.Context, subject string) ([]*model.Connection, error)
+	SaveMessage(ctx context.Context, subject string, message *broker.Message) (uint64, error)
+	GetMessage(ctx context.Context, messageId uint64, subject string) (*model.Message, error)
+	SaveConnection(ctx context.Context, subject string, connection *model.Connection) error
 }

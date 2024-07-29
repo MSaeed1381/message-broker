@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"sync"
 	"therealbroker/internal/model"
 	"therealbroker/internal/store"
@@ -21,7 +22,7 @@ func NewMessageInMemory() *MessageInMemory {
 	}
 }
 
-func (m *MessageInMemory) Save(message *broker.Message) (uint64, error) {
+func (m *MessageInMemory) Save(ctx context.Context, message *broker.Message) (uint64, error) {
 	_, ok := m.messages.Load(message.Id)
 	if ok {
 		return 0, store.ErrMessageAlreadyExists{ID: uint64(message.Id)}
@@ -33,7 +34,7 @@ func (m *MessageInMemory) Save(message *broker.Message) (uint64, error) {
 	return messageId, nil
 }
 
-func (m *MessageInMemory) GetByID(id int) (*model.Message, error) {
+func (m *MessageInMemory) GetByID(ctx context.Context, id int) (*model.Message, error) {
 	message, ok := m.messages.Load(id)
 	if !ok {
 		return message.(*model.Message), store.ErrMessageNotFound{ID: uint64(id)}
@@ -42,7 +43,7 @@ func (m *MessageInMemory) GetByID(id int) (*model.Message, error) {
 	return message.(*model.Message), nil
 }
 
-func (m *MessageInMemory) GetAll() ([]model.Message, error) {
+func (m *MessageInMemory) GetAll(ctx context.Context) ([]model.Message, error) {
 	messages := make([]model.Message, 0)
 	for _, msg := range messages {
 		messages = append(messages, msg)

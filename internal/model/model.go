@@ -14,7 +14,8 @@ type Message struct {
 type Topic struct {
 	ID          uint64        `json:"id"`
 	Subject     string        `json:"subject"`
-	Messages    sync.Map      `json:"messages"`
+	Messages    sync.Map      `json:"messages"` // one-to-many relation - messageInMemory
+	Mu          sync.Mutex    // to synchronize Connections
 	Connections []*Connection `json:"connections"`
 }
 

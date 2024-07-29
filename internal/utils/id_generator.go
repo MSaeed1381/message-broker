@@ -10,7 +10,7 @@ type IdGenerator struct {
 }
 
 func NewIdGenerator() *IdGenerator {
-	return &IdGenerator{}
+	return &IdGenerator{counter: 0}
 }
 
 func (g *IdGenerator) Next() uint64 {
