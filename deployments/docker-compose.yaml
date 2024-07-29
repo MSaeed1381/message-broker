@@ -1,0 +1,24 @@
+version: "3"
+
+services:
+  message_broker:
+    build:
+      context: ../
+      dockerfile: build/Dockerfile
+    container_name: message_broker
+
+
+    restart: on-failure
+
+#    environment:
+#      - SECRET_KEY=${SECRET_KEY}
+#      - NO_WORKERS=${NO_WORKERS}
+#
+#    volumes:
+#      - /Users/saeedzare/docker_data/filesever/data:/app/files
+#
+#    ports:
+#      - "8080:8080"
+#
+#    networks:
+#      - my-net
