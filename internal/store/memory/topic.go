@@ -18,17 +18,13 @@ type TopicMemoryWrapper struct {
 
 type TopicInMemory struct {
 	topics   sync.Map // list of all memory.topics
-	messages sync.Map //
-
 	MsgIdGen *utils.IdGenerator
-	mu       *sync.Mutex
 }
 
 func NewTopicInMemory() *TopicInMemory {
 	return &TopicInMemory{
 		topics:   sync.Map{},
 		MsgIdGen: utils.NewIdGenerator(),
-		mu:       &sync.Mutex{},
 	}
 }
 

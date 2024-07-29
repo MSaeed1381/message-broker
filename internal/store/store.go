@@ -72,3 +72,14 @@ type Topic interface {
 	GetMessage(ctx context.Context, messageId uint64, subject string) (*model.Message, error)
 	SaveConnection(ctx context.Context, subject string, connection *model.Connection) error
 }
+
+type Connection interface {
+	Save(ctx context.Context, connection *model.Connection) error
+	GetAllConnections(ctx context.Context) ([]*model.Connection, error)
+}
+
+type Store interface {
+	TopicStore() Topic
+	ConnectionStore() Connection
+	MessageStore() Message
+}

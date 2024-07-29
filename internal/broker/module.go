@@ -3,22 +3,19 @@ package broker
 import (
 	"context"
 	"github.com/MSaeed1381/message-broker/internal/model"
-	"github.com/MSaeed1381/message-broker/internal/store"
 	"github.com/MSaeed1381/message-broker/internal/store/memory"
 	"github.com/MSaeed1381/message-broker/pkg/broker"
 	"time"
 )
 
 type Module struct {
-	Topics   store.Topic
-	Messages store.Message
-	closed   bool
+	Topics *memory.TopicInMemory
+	closed bool
 }
 
 func NewModule() broker.Broker {
 	return &Module{ // TODO change in memory to general form
 		Topics: memory.NewTopicInMemory(),
-		//	Messages: memory.NewMessageInMemory(),
 		closed: false,
 	}
 }

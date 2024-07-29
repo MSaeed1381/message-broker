@@ -13,8 +13,6 @@ type Message struct {
 type Topic struct {
 	ID      uint64
 	Subject string
-	//Message    []*Message
-	//Connection []*Connection
 }
 
 // Connection for store channel (this must be synchronized by mutex)
