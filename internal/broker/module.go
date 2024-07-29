@@ -6,7 +6,6 @@ import (
 	"github.com/MSaeed1381/message-broker/internal/store"
 	"github.com/MSaeed1381/message-broker/internal/store/memory"
 	"github.com/MSaeed1381/message-broker/pkg/broker"
-	"sync"
 	"time"
 )
 
@@ -18,9 +17,9 @@ type Module struct {
 
 func NewModule() broker.Broker {
 	return &Module{ // TODO change in memory to general form
-		Topics:   memory.NewTopicInMemory(),
-		Messages: memory.NewMessageInMemory(),
-		closed:   false,
+		Topics: memory.NewTopicInMemory(),
+		//	Messages: memory.NewMessageInMemory(),
+		closed: false,
 	}
 }
 
@@ -35,13 +34,12 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 	}
 
 	topic, err := m.Topics.GetBySubject(ctx, subject)
-
 	// TODO AS function to check error
 	if err != nil {
 		topic = &model.Topic{
-			Subject:     subject,
-			Messages:    sync.Map{},
-			Connections: make([]*model.Connection, 10),
+			Subject: subject,
+			//Message:    make([]*model.Message, 0),
+			//Connection: make([]*model.Connection, 0),
 		}
 
 		err := m.Topics.Save(ctx, topic)
@@ -78,9 +76,9 @@ func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.M
 	topic, err := m.Topics.GetBySubject(ctx, subject)
 	if err != nil {
 		topic = &model.Topic{
-			Subject:     subject,
-			Messages:    sync.Map{},
-			Connections: make([]*model.Connection, 0),
+			Subject: subject,
+			//Message:    make([]*model.Message, 0),
+			//Connection: make([]*model.Connection, 0),
 		}
 
 		err := m.Topics.Save(ctx, topic)
@@ -96,7 +94,6 @@ func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.M
 		ctx,
 		subject,
 		&model.Connection{
-			Mu:      sync.Mutex{},
 			Channel: &result,
 		})
 
@@ -113,6 +110,7 @@ func (m *Module) Fetch(ctx context.Context, subject string, id int) (broker.Mess
 	}
 
 	msg, err := m.Topics.GetMessage(ctx, uint64(id), subject)
+
 	if err != nil {
 		return broker.Message{}, broker.ErrInvalidID
 	}

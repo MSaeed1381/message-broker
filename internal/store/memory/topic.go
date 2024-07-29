@@ -7,11 +7,19 @@ import (
 	"github.com/MSaeed1381/message-broker/internal/utils"
 	"github.com/MSaeed1381/message-broker/pkg/broker"
 	"sync"
-	"time"
 )
 
+// TopicMemoryWrapper wrap model.Topic instance
+type TopicMemoryWrapper struct {
+	Message    *MessageInMemory // save messages in it
+	Connection *ConnectionInMemory
+	topic      *model.Topic
+}
+
 type TopicInMemory struct {
-	topics   sync.Map // list of all topics
+	topics   sync.Map // list of all memory.topics
+	messages sync.Map //
+
 	MsgIdGen *utils.IdGenerator
 	mu       *sync.Mutex
 }
@@ -25,66 +33,77 @@ func NewTopicInMemory() *TopicInMemory {
 }
 
 func (t *TopicInMemory) Save(ctx context.Context, topic *model.Topic) error {
-	//_, ok := t.topics.Load(topic.Subject)
+	//_, ok := t.topics.Load(topic.Topic)
 	//if ok {
-	//	return store.ErrTopicAlreadyExists{Subject: topic.Subject}
+	//	return store.ErrTopicAlreadyExists{Topic: topic.Topic}
 	//}
 
-	t.topics.Store(topic.Subject, topic)
+	t.topics.Store(topic.Subject, TopicMemoryWrapper{
+		Message:    &MessageInMemory{},
+		Connection: &ConnectionInMemory{},
+		topic:      topic,
+	})
 	return nil
 }
 
 func (t *TopicInMemory) GetBySubject(ctx context.Context, subject string) (*model.Topic, error) {
-	topic, ok := t.topics.Load(subject)
+	tw, ok := t.topics.Load(subject)
 	if !ok {
 		return &model.Topic{}, store.ErrTopicNotFound{Subject: subject}
 	}
-	return topic.(*model.Topic), nil
+	return tw.(TopicMemoryWrapper).topic, nil
 }
 
 func (t *TopicInMemory) GetOpenConnections(ctx context.Context, subject string) ([]*model.Connection, error) {
-	topic, err := t.GetBySubject(ctx, subject)
+	tw, ok := t.topics.Load(subject)
+	if !ok {
+		return make([]*model.Connection, 0), store.ErrTopicNotFound{Subject: subject}
+	}
+
+	connections, err := tw.(TopicMemoryWrapper).Connection.GetAllConnections(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return topic.Connections, nil
+	return connections, nil
 }
 
 func (t *TopicInMemory) SaveMessage(ctx context.Context, subject string, message *broker.Message) (uint64, error) {
-	topic, err := t.GetBySubject(ctx, subject)
+	tw, ok := t.topics.Load(subject)
+	if !ok {
+		return 0, store.ErrTopicNotFound{Subject: subject}
+	}
+
+	msgId, err := tw.(TopicMemoryWrapper).Message.Save(ctx, message)
 	if err != nil {
 		return 0, err
 	}
 
-	msgId := t.MsgIdGen.Next()
-	topic.Messages.Store(msgId, &model.Message{BrokerMessage: message, CreateAt: time.Now()})
 	return msgId, nil
 }
 
 func (t *TopicInMemory) GetMessage(ctx context.Context, messageId uint64, subject string) (*model.Message, error) {
-	topic, err := t.GetBySubject(ctx, subject)
-	if err != nil {
-		return &model.Message{}, err
-	}
-
-	msg, ok := topic.Messages.Load(messageId)
+	tw, ok := t.topics.Load(subject)
 	if !ok {
-		return &model.Message{}, err
+		return nil, store.ErrTopicNotFound{Subject: subject}
 	}
 
-	return msg.(*model.Message), nil
+	msg, err := tw.(TopicMemoryWrapper).Message.GetByID(ctx, messageId)
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, nil
 }
 
 func (t *TopicInMemory) SaveConnection(ctx context.Context, subject string, connection *model.Connection) error {
-	topic, err := t.GetBySubject(ctx, subject)
-	if err != nil {
-		return err
+	tw, ok := t.topics.Load(subject)
+	if !ok {
+		return store.ErrTopicNotFound{Subject: subject}
 	}
 
-	topic.Mu.Lock()
-	topic.Connections = append(topic.Connections, connection)
-	topic.Mu.Unlock()
-
+	if err := tw.(TopicMemoryWrapper).Connection.Save(ctx, connection); err != nil {
+		return err
+	}
 	return nil
 }

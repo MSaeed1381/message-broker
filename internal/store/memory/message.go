@@ -30,24 +30,15 @@ func (m *MessageInMemory) Save(ctx context.Context, message *broker.Message) (ui
 
 	messageId := m.idGen.Next()
 
-	m.messages.Store(messageId, model.Message{BrokerMessage: message, CreateAt: time.Now()})
+	m.messages.Store(messageId, &model.Message{BrokerMessage: message, CreateAt: time.Now()})
 	return messageId, nil
 }
 
-func (m *MessageInMemory) GetByID(ctx context.Context, id int) (*model.Message, error) {
+func (m *MessageInMemory) GetByID(ctx context.Context, id uint64) (*model.Message, error) {
 	message, ok := m.messages.Load(id)
 	if !ok {
-		return message.(*model.Message), store.ErrMessageNotFound{ID: uint64(id)}
+		return message.(*model.Message), store.ErrMessageNotFound{ID: id}
 	}
 
 	return message.(*model.Message), nil
-}
-
-func (m *MessageInMemory) GetAll(ctx context.Context) ([]model.Message, error) {
-	messages := make([]model.Message, 0)
-	for _, msg := range messages {
-		messages = append(messages, msg)
-	}
-
-	return messages, nil
 }
