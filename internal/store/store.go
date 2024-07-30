@@ -77,9 +77,3 @@ type Connection interface {
 	Save(ctx context.Context, connection *model.Connection) error
 	GetAllConnections(ctx context.Context) ([]*model.Connection, error)
 }
-
-type Store interface {
-	TopicStore() Topic
-	ConnectionStore() Connection
-	MessageStore() Message
-}

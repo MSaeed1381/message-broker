@@ -85,7 +85,7 @@ func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.M
 	}
 
 	// TODO put size as constant in config file
-	result := make(chan broker.Message, 10000)
+	result := make(chan broker.Message, 10)
 
 	err = m.Topics.SaveConnection(
 		ctx,
