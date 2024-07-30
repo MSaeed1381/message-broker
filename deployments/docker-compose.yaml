@@ -10,6 +10,34 @@ services:
 
     restart: on-failure
 
+  prometheus:
+    image: docker.io/prom/prometheus:v2.53.1
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    command: "--config.file=/etc/prometheus/prometheus.yaml"
+    volumes:
+      - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+
+
+  grafana:
+    image: docker.io/grafana/grafana-oss:11.1.3
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
 #    environment:
 #      - SECRET_KEY=${SECRET_KEY}
 #      - NO_WORKERS=${NO_WORKERS}
