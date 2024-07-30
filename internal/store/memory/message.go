@@ -29,6 +29,7 @@ func (m *MessageInMemory) Save(ctx context.Context, message *broker.Message) (ui
 	}
 
 	messageId := m.idGen.Next()
+	message.Id = int(messageId) // set id to broker message
 
 	m.messages.Store(messageId, &model.Message{BrokerMessage: message, CreateAt: time.Now()})
 	return messageId, nil
@@ -37,7 +38,7 @@ func (m *MessageInMemory) Save(ctx context.Context, message *broker.Message) (ui
 func (m *MessageInMemory) GetByID(ctx context.Context, id uint64) (*model.Message, error) {
 	message, ok := m.messages.Load(id)
 	if !ok {
-		return message.(*model.Message), store.ErrMessageNotFound{ID: id}
+		return &model.Message{}, store.ErrMessageNotFound{ID: id}
 	}
 
 	return message.(*model.Message), nil

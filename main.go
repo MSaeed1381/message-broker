@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"github.com/MSaeed1381/message-broker/api/server"
+	"github.com/MSaeed1381/message-broker/internal/broker"
+)
 
 // Main requirements:
 // 1. All tests should be passed
@@ -9,5 +12,13 @@ import "fmt"
 // 	  for every base functionality ( publish, subscribe etc. )
 
 func main() {
-	fmt.Println("Hello!")
+	config := Config{
+		grpcAddr: "0.0.0.0:8000",
+	}
+
+	brokerModule := broker.NewModule()
+	grpcServer := server.NewBrokerServer(brokerModule)
+
+	grpcServer.Serve(config.grpcAddr)
+
 }

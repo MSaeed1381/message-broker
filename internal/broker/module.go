@@ -10,28 +10,30 @@ import (
 
 type Module struct {
 	Topics *memory.TopicInMemory
-	closed bool
+	Closed bool
 }
 
 func NewModule() broker.Broker {
 	return &Module{ // TODO change in memory to general form
 		Topics: memory.NewTopicInMemory(),
-		closed: false,
+		Closed: false,
 	}
 }
 
+// Close TODO implement with Channel
 func (m *Module) Close() error {
-	m.closed = true
+	m.Closed = true
 	return nil
 }
 
 func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message) (int, error) {
-	if m.closed {
+	if m.Closed {
 		return 0, broker.ErrUnavailable
 	}
 
 	topic, err := m.Topics.GetBySubject(ctx, subject)
 	// TODO AS function to check error
+	// TODO synchronize this
 	if err != nil {
 		topic = &model.Topic{
 			Subject: subject,
@@ -66,7 +68,7 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 }
 
 func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.Message, error) {
-	if m.closed {
+	if m.Closed {
 		return nil, broker.ErrUnavailable
 	}
 
@@ -102,7 +104,7 @@ func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.M
 }
 
 func (m *Module) Fetch(ctx context.Context, subject string, id int) (broker.Message, error) {
-	if m.closed {
+	if m.Closed {
 		return broker.Message{}, broker.ErrUnavailable
 	}
 

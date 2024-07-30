@@ -21,14 +21,14 @@ func NewBrokerServer(service broker.Broker) *BrokerServer {
 	}
 }
 
-func (s *BrokerServer) Serve(addr string, service broker.Broker) {
+func (s *BrokerServer) Serve(addr string) {
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic("failed to listen: " + err.Error())
 	}
 
 	grpcServer := grpc.NewServer()
-	proto.RegisterBrokerServer(grpcServer, NewBrokerServer(service))
+	proto.RegisterBrokerServer(grpcServer, NewBrokerServer(s.service))
 
 	log.Printf("gRPC server listening at %v", lis.Addr())
 	if err := grpcServer.Serve(lis); err != nil {
@@ -37,10 +37,12 @@ func (s *BrokerServer) Serve(addr string, service broker.Broker) {
 }
 
 func (s *BrokerServer) Publish(ctx context.Context, req *proto.PublishRequest) (*proto.PublishResponse, error) {
-	messageID, err := s.service.Publish(ctx, req.GetSubject(), broker.Message{
+	msg := broker.Message{
 		Body:       string(req.GetBody()),
-		Expiration: time.Duration(req.GetExpirationSeconds()),
-	})
+		Expiration: time.Duration(float64(req.GetExpirationSeconds()) * float64(time.Second)),
+	}
+
+	messageID, err := s.service.Publish(ctx, req.GetSubject(), msg)
 
 	if err != nil {
 		return nil, err
@@ -50,16 +52,25 @@ func (s *BrokerServer) Publish(ctx context.Context, req *proto.PublishRequest) (
 }
 
 func (s *BrokerServer) Subscribe(req *proto.SubscribeRequest, res proto.Broker_SubscribeServer) error {
-	msgChannel, err := s.service.Subscribe(context.Background(), req.GetSubject())
+	msgChannel, err := s.service.Subscribe(res.Context(), req.GetSubject())
 	if err != nil {
 		return err
 	}
 
-	for msg := range msgChannel {
-		if err := res.Send(&proto.MessageResponse{Body: []byte(msg.Body)}); err != nil {
-			return err
+	func(ctx context.Context, msgChannel <-chan broker.Message) {
+		for {
+			select {
+			case msg := <-msgChannel:
+				if err := res.Send(&proto.MessageResponse{Body: []byte(msg.Body)}); err != nil {
+					panic(err)
+				}
+			case <-ctx.Done():
+				log.Println("user cancelled the request")
+				return
+			}
 		}
-	}
+	}(res.Context(), msgChannel)
+
 	return nil
 }
 
