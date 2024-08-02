@@ -6,47 +6,41 @@ services:
       context: ../
       dockerfile: build/Dockerfile
     container_name: message_broker
-
-
     restart: on-failure
 
+    ports:
+      - "8000:8000"
+
   prometheus:
-    image: docker.io/prom/prometheus:v2.53.1
+    image: docker.io/prom/prometheus
     container_name: prometheus
     ports:
       - "9090:9090"
-    command: "--config.file=/etc/prometheus/prometheus.yaml"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yaml"
+      - '--storage.tsdb.path=/prometheus'
     volumes:
-      - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
-      - prometheus-data:/prometheus
+      - ../config/prometheus:/etc/prometheus/:ro # ro means read-only
+      - ../prometheus-data:/prometheus
     restart: unless-stopped
 
+    depends_on:
+      - message_broker
 
   grafana:
-    image: docker.io/grafana/grafana-oss:11.1.3
+    image: docker.io/grafana/grafana
     container_name: grafana
     ports:
       - "3000:3000"
     volumes:
-      - grafana-data:/var/lib/grafana
+      - ../grafana-data:/var/lib/grafana
     restart: unless-stopped
 
+    depends_on:
+      - prometheus
 
 volumes:
   prometheus-data:
     driver: local
   grafana-data:
     driver: local
-
-#    environment:
-#      - SECRET_KEY=${SECRET_KEY}
-#      - NO_WORKERS=${NO_WORKERS}
-#
-#    volumes:
-#      - /Users/saeedzare/docker_data/filesever/data:/app/files
-#
-#    ports:
-#      - "8080:8080"
-#
-#    networks:
-#      - my-net

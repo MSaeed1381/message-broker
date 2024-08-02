@@ -1,0 +1,11 @@
+global:
+  scrape_interval:     15s
+
+
+scrape_configs:
+  - job_name: 'message_broker'
+
+    scrape_interval: 1s
+
+    static_configs:
+      - targets: ['message_broker:5555']

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/MSaeed1381/message-broker/api/proto"
 	"github.com/MSaeed1381/message-broker/pkg/broker"
+	"github.com/MSaeed1381/message-broker/pkg/metric"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -12,12 +13,14 @@ import (
 
 type BrokerServer struct {
 	proto.UnimplementedBrokerServer
-	service broker.Broker
+	service              broker.Broker
+	prometheusController *metric.PrometheusController
 }
 
-func NewBrokerServer(service broker.Broker) *BrokerServer {
+func NewBrokerServer(service broker.Broker, pc *metric.PrometheusController) *BrokerServer {
 	return &BrokerServer{
-		service: service,
+		service:              service,
+		prometheusController: pc,
 	}
 }
 
@@ -28,7 +31,7 @@ func (s *BrokerServer) Serve(addr string) {
 	}
 
 	grpcServer := grpc.NewServer()
-	proto.RegisterBrokerServer(grpcServer, NewBrokerServer(s.service))
+	proto.RegisterBrokerServer(grpcServer, s)
 
 	log.Printf("gRPC server listening at %v", lis.Addr())
 	if err := grpcServer.Serve(lis); err != nil {
@@ -37,6 +40,8 @@ func (s *BrokerServer) Serve(addr string) {
 }
 
 func (s *BrokerServer) Publish(ctx context.Context, req *proto.PublishRequest) (*proto.PublishResponse, error) {
+	start := time.Now()
+
 	msg := broker.Message{
 		Body:       string(req.GetBody()),
 		Expiration: time.Duration(float64(req.GetExpirationSeconds()) * float64(time.Second)),
@@ -45,17 +50,29 @@ func (s *BrokerServer) Publish(ctx context.Context, req *proto.PublishRequest) (
 	messageID, err := s.service.Publish(ctx, req.GetSubject(), msg)
 
 	if err != nil {
+		s.prometheusController.IncMethodCallCount(metric.Publish, metric.FAILURE)
+		s.prometheusController.ObserveMethodDuration(metric.Publish, metric.FAILURE, time.Since(start))
 		return nil, err
 	}
 
+	s.prometheusController.IncMethodCallCount(metric.Publish, metric.SUCCESS)
+	s.prometheusController.ObserveMethodDuration(metric.Publish, metric.SUCCESS, time.Since(start))
 	return &proto.PublishResponse{Id: int32(messageID)}, nil
 }
 
 func (s *BrokerServer) Subscribe(req *proto.SubscribeRequest, res proto.Broker_SubscribeServer) error {
+	start := time.Now()
+
 	msgChannel, err := s.service.Subscribe(res.Context(), req.GetSubject())
 	if err != nil {
+		s.prometheusController.IncMethodCallCount(metric.Subscribe, metric.FAILURE)
+		s.prometheusController.ObserveMethodDuration(metric.Subscribe, metric.FAILURE, time.Since(start))
 		return err
 	}
+
+	s.prometheusController.IncMethodCallCount(metric.Subscribe, metric.SUCCESS)
+	s.prometheusController.ObserveMethodDuration(metric.Subscribe, metric.SUCCESS, time.Since(start))
+	s.prometheusController.IncActiveSubscribers()
 
 	func(ctx context.Context, msgChannel <-chan broker.Message) {
 		for {
@@ -65,6 +82,7 @@ func (s *BrokerServer) Subscribe(req *proto.SubscribeRequest, res proto.Broker_S
 					panic(err)
 				}
 			case <-ctx.Done():
+				s.prometheusController.DecActiveSubscribers()
 				log.Println("user cancelled the request")
 				return
 			}
@@ -75,10 +93,16 @@ func (s *BrokerServer) Subscribe(req *proto.SubscribeRequest, res proto.Broker_S
 }
 
 func (s *BrokerServer) Fetch(ctx context.Context, req *proto.FetchRequest) (*proto.MessageResponse, error) {
+	start := time.Now()
+
 	msg, err := s.service.Fetch(ctx, req.GetSubject(), int(req.GetId()))
 	if err != nil {
+		s.prometheusController.IncMethodCallCount(metric.Fetch, metric.FAILURE)
+		s.prometheusController.ObserveMethodDuration(metric.Fetch, metric.FAILURE, time.Since(start))
 		return nil, err
 	}
 
+	s.prometheusController.IncMethodCallCount(metric.Fetch, metric.SUCCESS)
+	s.prometheusController.ObserveMethodDuration(metric.Fetch, metric.SUCCESS, time.Since(start))
 	return &proto.MessageResponse{Body: []byte(msg.Body)}, nil
 }

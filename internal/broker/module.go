@@ -2,6 +2,7 @@ package broker
 
 import (
 	"context"
+	"fmt"
 	"github.com/MSaeed1381/message-broker/internal/model"
 	"github.com/MSaeed1381/message-broker/internal/store/memory"
 	"github.com/MSaeed1381/message-broker/pkg/broker"
@@ -56,6 +57,8 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 	if err != nil {
 		return 0, err
 	}
+
+	fmt.Println(messageId)
 
 	// TODO for until connection saved
 	for _, connection := range connections {
