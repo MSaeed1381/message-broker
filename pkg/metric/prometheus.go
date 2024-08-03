@@ -5,7 +5,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
-	"time"
 )
 
 type PrometheusController struct {
@@ -48,8 +47,8 @@ func (p *PrometheusController) IncMethodCallCount(method Method, status Status) 
 	p.methodCounter.WithLabelValues(MethodToStr(method), StatusToStr(status)).Inc()
 }
 
-func (p *PrometheusController) ObserveMethodDuration(method Method, status Status, duration time.Duration) {
-	p.methodDuration.WithLabelValues(MethodToStr(method), StatusToStr(status)).Observe(float64(duration))
+func (p *PrometheusController) ObserveMethodDuration(method Method, status Status, duration float64) {
+	p.methodDuration.WithLabelValues(MethodToStr(method), StatusToStr(status)).Observe(duration)
 }
 
 func (p *PrometheusController) IncActiveSubscribers() {

@@ -14,10 +14,10 @@ import (
 type BrokerServer struct {
 	proto.UnimplementedBrokerServer
 	service              broker.Broker
-	prometheusController *metric.PrometheusController
+	prometheusController metric.Metric
 }
 
-func NewBrokerServer(service broker.Broker, pc *metric.PrometheusController) *BrokerServer {
+func NewBrokerServer(service broker.Broker, pc metric.Metric) *BrokerServer {
 	return &BrokerServer{
 		service:              service,
 		prometheusController: pc,
@@ -51,12 +51,13 @@ func (s *BrokerServer) Publish(ctx context.Context, req *proto.PublishRequest) (
 
 	if err != nil {
 		s.prometheusController.IncMethodCallCount(metric.Publish, metric.FAILURE)
-		s.prometheusController.ObserveMethodDuration(metric.Publish, metric.FAILURE, time.Since(start))
+		s.prometheusController.ObserveMethodDuration(metric.Publish, metric.FAILURE, time.Since(start).Seconds())
 		return nil, err
 	}
 
 	s.prometheusController.IncMethodCallCount(metric.Publish, metric.SUCCESS)
-	s.prometheusController.ObserveMethodDuration(metric.Publish, metric.SUCCESS, time.Since(start))
+
+	s.prometheusController.ObserveMethodDuration(metric.Publish, metric.SUCCESS, time.Since(start).Seconds())
 	return &proto.PublishResponse{Id: int32(messageID)}, nil
 }
 
@@ -66,12 +67,12 @@ func (s *BrokerServer) Subscribe(req *proto.SubscribeRequest, res proto.Broker_S
 	msgChannel, err := s.service.Subscribe(res.Context(), req.GetSubject())
 	if err != nil {
 		s.prometheusController.IncMethodCallCount(metric.Subscribe, metric.FAILURE)
-		s.prometheusController.ObserveMethodDuration(metric.Subscribe, metric.FAILURE, time.Since(start))
+		s.prometheusController.ObserveMethodDuration(metric.Subscribe, metric.FAILURE, time.Since(start).Seconds())
 		return err
 	}
 
 	s.prometheusController.IncMethodCallCount(metric.Subscribe, metric.SUCCESS)
-	s.prometheusController.ObserveMethodDuration(metric.Subscribe, metric.SUCCESS, time.Since(start))
+	s.prometheusController.ObserveMethodDuration(metric.Subscribe, metric.SUCCESS, time.Since(start).Seconds())
 	s.prometheusController.IncActiveSubscribers()
 
 	func(ctx context.Context, msgChannel <-chan broker.Message) {
@@ -98,11 +99,11 @@ func (s *BrokerServer) Fetch(ctx context.Context, req *proto.FetchRequest) (*pro
 	msg, err := s.service.Fetch(ctx, req.GetSubject(), int(req.GetId()))
 	if err != nil {
 		s.prometheusController.IncMethodCallCount(metric.Fetch, metric.FAILURE)
-		s.prometheusController.ObserveMethodDuration(metric.Fetch, metric.FAILURE, time.Since(start))
+		s.prometheusController.ObserveMethodDuration(metric.Fetch, metric.FAILURE, time.Since(start).Seconds())
 		return nil, err
 	}
 
 	s.prometheusController.IncMethodCallCount(metric.Fetch, metric.SUCCESS)
-	s.prometheusController.ObserveMethodDuration(metric.Fetch, metric.SUCCESS, time.Since(start))
+	s.prometheusController.ObserveMethodDuration(metric.Fetch, metric.SUCCESS, time.Since(start).Seconds())
 	return &proto.MessageResponse{Body: []byte(msg.Body)}, nil
 }

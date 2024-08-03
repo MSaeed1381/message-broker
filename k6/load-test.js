@@ -13,22 +13,22 @@ export const options = {
     scenarios: {
         constant_request_rate: {
             executor: 'constant-arrival-rate',
-            rate: 1000, // number of requests per second
+            rate: 5000, // number of requests per second
             timeUnit: '1s', // per second
-            duration: '20s', // test duration
-            preAllocatedVUs: 500, // initial VUs
-            maxVUs: 1100, // maximum VUs
+            duration: '30s', // test duration
+            preAllocatedVUs: 1000, // initial VUs
+            maxVUs: 10000, // maximum VUs
         },
     },
     thresholds: {
-        'publish_requests': ['count > 100'], // ensure at least 100 publish requests were made
-        'fetch_requests': ['count > 100'], // ensure at least 100 fetch requests were made
+        'publish_requests': ['count > 2800000'], // ensure at least 100 publish requests were made
+        'fetch_requests': ['count > 2800000'], // ensure at least 100 fetch requests were made
         'checks': ['rate>0.95'], // ensure at least 95% of checks passed
     },
 };
 
 export default () => {
-    client.connect('localhost:8000', {
+    client.connect('127.0.0.1:8000', {
         plaintext: true,
     });
 
