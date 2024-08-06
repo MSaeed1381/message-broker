@@ -56,7 +56,6 @@ func (s *BrokerServer) Publish(ctx context.Context, req *proto.PublishRequest) (
 	}
 
 	s.prometheusController.IncMethodCallCount(metric.Publish, metric.SUCCESS)
-
 	s.prometheusController.ObserveMethodDuration(metric.Publish, metric.SUCCESS, time.Since(start).Seconds())
 	return &proto.PublishResponse{Id: int32(messageID)}, nil
 }

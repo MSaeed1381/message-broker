@@ -6,3 +6,4 @@
 */.DS_Store
 grafana-data/*
 prometheus-data/*
+postgres-data/*
