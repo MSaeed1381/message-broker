@@ -41,7 +41,7 @@ func (e ErrMessageInvalid) Error() string {
 
 // Message Save message With Broker Message and return Broker Message From Data Store
 type Message interface {
-	Save(ctx context.Context, message *broker.Message) (uint64, error)
+	Save(ctx context.Context, message *broker.Message, subject string) (uint64, error)
 	GetByID(ctx context.Context, id uint64) (*model.Message, error)
 }
 

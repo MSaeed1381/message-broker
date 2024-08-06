@@ -9,36 +9,40 @@ import (
 	"sync"
 )
 
-// TopicMemoryWrapper wrap model.Topic instance
+// TopicMemoryWrapper wrap one model.Topic instance
 type TopicMemoryWrapper struct {
-	Message    *MessageInMemory // save messages in it
+	Message    store.Message // save messages in it
 	Connection *ConnectionInMemory
 	topic      *model.Topic
 }
 
 type TopicInMemory struct {
-	topics   sync.Map // list of all memory.topics
+	topics   sync.Map // list of all memory.topics (saves TopicMemoryWrapper in it)
 	MsgIdGen *utils.IdGenerator
+	MsgStore store.Message // nil when storage is in-memory
 }
 
-func NewTopicInMemory() *TopicInMemory {
+func NewTopicInMemory(msgStore store.Message) *TopicInMemory {
 	return &TopicInMemory{
 		topics:   sync.Map{},
 		MsgIdGen: utils.NewIdGenerator(),
+		MsgStore: msgStore,
 	}
 }
 
 func (t *TopicInMemory) Save(ctx context.Context, topic *model.Topic) error {
-	//_, ok := t.topics.Load(topic.Topic)
-	//if ok {
-	//	return store.ErrTopicAlreadyExists{Topic: topic.Topic}
-	//}
-
-	t.topics.Store(topic.Subject, TopicMemoryWrapper{
-		Message:    &MessageInMemory{},
-		Connection: &ConnectionInMemory{},
+	topicWrapper := &TopicMemoryWrapper{
+		Message:    t.MsgStore,
+		Connection: NewConnectionInMemory(),
 		topic:      topic,
-	})
+	}
+
+	// if msgStore is nil then means that we use message in memory (default)
+	if topicWrapper.Message == nil {
+		topicWrapper.Message = NewMessageInMemory()
+	}
+
+	t.topics.Store(topic.Subject, topicWrapper)
 	return nil
 }
 
@@ -47,7 +51,7 @@ func (t *TopicInMemory) GetBySubject(ctx context.Context, subject string) (*mode
 	if !ok {
 		return &model.Topic{}, store.ErrTopicNotFound{Subject: subject}
 	}
-	return tw.(TopicMemoryWrapper).topic, nil
+	return tw.(*TopicMemoryWrapper).topic, nil
 }
 
 func (t *TopicInMemory) GetOpenConnections(ctx context.Context, subject string) ([]*model.Connection, error) {
@@ -56,7 +60,7 @@ func (t *TopicInMemory) GetOpenConnections(ctx context.Context, subject string) 
 		return make([]*model.Connection, 0), store.ErrTopicNotFound{Subject: subject}
 	}
 
-	connections, err := tw.(TopicMemoryWrapper).Connection.GetAllConnections(ctx)
+	connections, err := tw.(*TopicMemoryWrapper).Connection.GetAllConnections(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +74,7 @@ func (t *TopicInMemory) SaveMessage(ctx context.Context, subject string, message
 		return 0, store.ErrTopicNotFound{Subject: subject}
 	}
 
-	msgId, err := tw.(TopicMemoryWrapper).Message.Save(ctx, message)
+	msgId, err := tw.(*TopicMemoryWrapper).Message.Save(ctx, message, subject)
 	if err != nil {
 		return 0, err
 	}
@@ -84,7 +88,7 @@ func (t *TopicInMemory) GetMessage(ctx context.Context, messageId uint64, subjec
 		return nil, store.ErrTopicNotFound{Subject: subject}
 	}
 
-	msg, err := tw.(TopicMemoryWrapper).Message.GetByID(ctx, messageId)
+	msg, err := tw.(*TopicMemoryWrapper).Message.GetByID(ctx, messageId)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +102,7 @@ func (t *TopicInMemory) SaveConnection(ctx context.Context, subject string, conn
 		return store.ErrTopicNotFound{Subject: subject}
 	}
 
-	if err := tw.(TopicMemoryWrapper).Connection.Save(ctx, connection); err != nil {
+	if err := tw.(*TopicMemoryWrapper).Connection.Save(ctx, connection); err != nil {
 		return err
 	}
 	return nil

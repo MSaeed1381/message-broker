@@ -22,7 +22,7 @@ func NewMessageInMemory() *MessageInMemory {
 	}
 }
 
-func (m *MessageInMemory) Save(ctx context.Context, message *broker.Message) (uint64, error) {
+func (m *MessageInMemory) Save(ctx context.Context, message *broker.Message, _ string) (uint64, error) {
 	_, ok := m.messages.Load(message.Id)
 	if ok {
 		return 0, store.ErrMessageAlreadyExists{ID: uint64(message.Id)}
