@@ -17,5 +17,6 @@ func (g *IdGenerator) Next() uint64 {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 	g.counter++
-	return g.counter
+	temp := g.counter
+	return temp
 }

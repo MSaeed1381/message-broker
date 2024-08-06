@@ -2,21 +2,21 @@ package broker
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"github.com/MSaeed1381/message-broker/internal/model"
-	"github.com/MSaeed1381/message-broker/internal/store/memory"
+	"github.com/MSaeed1381/message-broker/internal/store"
 	"github.com/MSaeed1381/message-broker/pkg/broker"
 	"time"
 )
 
 type Module struct {
-	Topics *memory.TopicInMemory
+	Topics store.Topic // have msg Store and connection Store
 	Closed bool
 }
 
-func NewModule() broker.Broker {
-	return &Module{ // TODO change in memory to general form
-		Topics: memory.NewTopicInMemory(),
+func NewModule(topic store.Topic) broker.Broker {
+	return &Module{
+		Topics: topic,
 		Closed: false,
 	}
 }
@@ -33,14 +33,11 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 	}
 
 	topic, err := m.Topics.GetBySubject(ctx, subject)
-	// TODO AS function to check error
+
 	// TODO synchronize this
-	if err != nil {
-		topic = &model.Topic{
-			Subject: subject,
-			//Message:    make([]*model.Message, 0),
-			//Connection: make([]*model.Connection, 0),
-		}
+	if errors.As(err, &store.ErrTopicNotFound{}) {
+		// create the new model and saves to data store
+		topic = model.NewTopicModel(subject)
 
 		err := m.Topics.Save(ctx, topic)
 		if err != nil {
@@ -48,7 +45,7 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 		}
 	}
 
-	messageId, err := m.Topics.SaveMessage(ctx, subject, &msg)
+	msgId, err := m.Topics.SaveMessage(ctx, subject, &msg)
 	if err != nil {
 		return 0, err
 	}
@@ -58,8 +55,6 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 		return 0, err
 	}
 
-	fmt.Println(messageId)
-
 	// TODO for until connection saved
 	for _, connection := range connections {
 		if connection != nil && connection.Channel != nil {
@@ -67,7 +62,7 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 		}
 	}
 
-	return int(messageId), nil
+	return int(msgId), nil
 }
 
 func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.Message, error) {
@@ -77,11 +72,7 @@ func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.M
 
 	topic, err := m.Topics.GetBySubject(ctx, subject)
 	if err != nil {
-		topic = &model.Topic{
-			Subject: subject,
-			//Message:    make([]*model.Message, 0),
-			//Connection: make([]*model.Connection, 0),
-		}
+		topic = model.NewTopicModel(subject)
 
 		err := m.Topics.Save(ctx, topic)
 		if err != nil {
@@ -90,14 +81,13 @@ func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.M
 	}
 
 	// TODO put size as constant in config file
-	result := make(chan broker.Message, 10)
+	result := make(chan broker.Message, 1000)
 
 	err = m.Topics.SaveConnection(
 		ctx,
 		subject,
-		&model.Connection{
-			Channel: &result,
-		})
+		model.NewConnectionModel(&result),
+	)
 
 	if err != nil {
 		return nil, err
