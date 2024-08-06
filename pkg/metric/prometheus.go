@@ -59,10 +59,10 @@ func (p *PrometheusController) DecActiveSubscribers() {
 	p.activeSubscribers.WithLabelValues().Dec()
 }
 
-func (p *PrometheusController) Serve(reg *prometheus.Registry) {
+func (p *PrometheusController) Serve(reg *prometheus.Registry, prometheusAddress string) {
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
 
-	err := http.ListenAndServe(":5555", nil)
+	err := http.ListenAndServe(prometheusAddress, nil)
 	if err != nil {
 		panic(err)
 	}
