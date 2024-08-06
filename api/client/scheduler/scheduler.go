@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"github.com/MSaeed1381/message-broker/api/client/option"
 	"github.com/MSaeed1381/message-broker/api/client/worker"
 	"github.com/MSaeed1381/message-broker/api/proto"
@@ -36,9 +37,11 @@ func (s *Scheduler) Start(ctx context.Context, timeout, ticker time.Duration,
 			wg.Done()
 			return
 		case <-s.ticker.C:
+			start := time.Now()
 			for i := 0; i < noRequests; i++ {
 				s.clientPool.SubmitJob(job)
 			}
+			fmt.Println(time.Since(start))
 		}
 	}
 }

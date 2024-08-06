@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/MSaeed1381/message-broker/api/client/option"
 	"github.com/MSaeed1381/message-broker/api/client/report"
 	"github.com/MSaeed1381/message-broker/api/proto"
@@ -89,16 +88,13 @@ func (p *ClientImpl) process(brokerClient *proto.BrokerClient) {
 			} else {
 				p.report.PublishSuccess.Inc()
 			}
-			fmt.Println(publishId)
 		case option.Fetch:
 			fetchResponse, err := (*brokerClient).Fetch(job.Ctx, job.Request.(*proto.FetchRequest))
 			if err != nil || fetchResponse == nil ||
 				string(fetchResponse.Body) != string(job.ExpResponse.(*proto.MessageResponse).Body) {
 				p.report.FetchFailure.Inc()
-				fmt.Println("can not fetch job")
 			} else {
 				p.report.FetchSuccess.Inc()
-				fmt.Println(fetchResponse.GetBody())
 			}
 		}
 	}
