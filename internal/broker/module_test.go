@@ -2,6 +2,7 @@ package broker
 
 import (
 	"context"
+	"github.com/MSaeed1381/message-broker/internal/store/memory"
 	"github.com/MSaeed1381/message-broker/pkg/broker"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
@@ -18,7 +19,7 @@ var (
 
 func TestMain(m *testing.M) {
 	rand.Seed(time.Now().Unix())
-	service = NewModule()
+	service = NewModule(memory.NewTopicInMemory(nil))
 	m.Run()
 }
 
@@ -65,6 +66,7 @@ func TestSubscribeShouldNotFail(t *testing.T) {
 
 func TestPublishShouldSendMessageToSubscribedChan(t *testing.T) {
 	msg := createMessage()
+	msg.Id = 1 // id starts from 1 TODO
 
 	sub, _ := service.Subscribe(mainCtx, "ali")
 	_, _ = service.Publish(mainCtx, "ali", msg)
@@ -75,6 +77,7 @@ func TestPublishShouldSendMessageToSubscribedChan(t *testing.T) {
 
 func TestPublishShouldSendMessageToSubscribedChans(t *testing.T) {
 	msg := createMessage()
+	msg.Id = 1 // id starts from 1 TODO
 
 	sub1, _ := service.Subscribe(mainCtx, "ali")
 	sub2, _ := service.Subscribe(mainCtx, "ali")
@@ -100,12 +103,16 @@ func TestPublishShouldPreserveOrder(t *testing.T) {
 
 	for i := 0; i < n; i++ {
 		msg := <-sub
+
+		messages[i].Id = i + 1 // order TODO
 		assert.Equal(t, messages[i], msg)
 	}
 }
 
 func TestPublishShouldNotSendToOtherSubscriptions(t *testing.T) {
 	msg := createMessage()
+	msg.Id = 1 // id starts from 1 TODO
+
 	ali, _ := service.Subscribe(mainCtx, "ali")
 	maryam, _ := service.Subscribe(mainCtx, "maryam")
 
@@ -120,6 +127,8 @@ func TestPublishShouldNotSendToOtherSubscriptions(t *testing.T) {
 
 func TestNonExpiredMessageShouldBeFetchable(t *testing.T) {
 	msg := createMessageWithExpire(time.Second * 10)
+	msg.Id = 1 // id starts from 1 TODO
+
 	id, _ := service.Publish(mainCtx, "ali", msg)
 	fMsg, _ := service.Fetch(mainCtx, "ali", id)
 
