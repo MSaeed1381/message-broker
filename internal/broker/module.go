@@ -45,7 +45,7 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 		}
 	}
 
-	msgId, err := m.Topics.SaveMessage(ctx, subject, &msg)
+	msgId, err := m.Topics.SaveMessage(ctx, model.NewMessageModel(subject, &msg))
 	if err != nil {
 		return 0, err
 	}

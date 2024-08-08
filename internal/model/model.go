@@ -11,6 +11,14 @@ type Message struct {
 	CreateAt      time.Time
 }
 
+func NewMessageModel(subject string, brokerMessage *broker.Message) *Message {
+	return &Message{
+		BrokerMessage: brokerMessage,
+		Subject:       subject,
+		CreateAt:      time.Now(),
+	}
+}
+
 type Topic struct {
 	ID      uint64
 	Subject string
