@@ -98,13 +98,14 @@ func TestPublishShouldPreserveOrder(t *testing.T) {
 	sub, _ := service.Subscribe(mainCtx, "ali")
 	for i := 0; i < n; i++ {
 		messages[i] = createMessage()
+		messages[i].Id = i + 1 // order TODO
+
 		_, _ = service.Publish(mainCtx, "ali", messages[i])
 	}
 
 	for i := 0; i < n; i++ {
 		msg := <-sub
 
-		messages[i].Id = i + 1 // order TODO
 		assert.Equal(t, messages[i], msg)
 	}
 }

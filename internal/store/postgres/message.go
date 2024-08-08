@@ -19,7 +19,7 @@ func NewMessageInPostgres(psql Postgres) *MessageInPostgres {
 
 func (m *MessageInPostgres) Save(ctx context.Context, message *broker.Message, subject string) (uint64, error) {
 	var id uint64
-	err := m.psql.DB.QueryRow("INSERT INTO message(body, expiration, createdAt, subject) VALUES($1, $2, $3, $4) RETURNING id",
+	err := m.psql.db.QueryRow(ctx, "INSERT INTO message(body, expiration, createdAt, subject) VALUES($1, $2, $3, $4) RETURNING id",
 		message.Body, message.Expiration.Seconds(), time.Now(), subject).Scan(&id)
 
 	if err != nil {
@@ -29,7 +29,7 @@ func (m *MessageInPostgres) Save(ctx context.Context, message *broker.Message, s
 }
 
 func (m *MessageInPostgres) GetByID(ctx context.Context, id uint64) (*model.Message, error) {
-	rows, err := m.psql.DB.Query("SELECT body, expiration, createdAt FROM message WHERE id = $1", id)
+	rows, err := m.psql.db.Query(ctx, "SELECT body, expiration, createdAt FROM message WHERE id = $1", id)
 	if err != nil {
 		return nil, err
 	}

@@ -2,14 +2,17 @@ version: "3"
 
 services:
   postgres:
+    container_name: postgres
     image: postgres:latest
     restart: always
     environment:
       POSTGRES_DB: message_broker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
     volumes:
-      - ./postgres-data:/var/lib/postgresql/data
+      - ../postgres-data:/var/lib/postgresql/data
 
   message_broker:
     build:
@@ -20,6 +23,9 @@ services:
 
     ports:
       - "8000:8000"
+
+    depends_on:
+      - postgres
 
   prometheus:
     image: docker.io/prom/prometheus
@@ -53,4 +59,6 @@ volumes:
   prometheus-data:
     driver: local
   grafana-data:
+    driver: local
+  postgres-data:
     driver: local

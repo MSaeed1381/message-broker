@@ -1,36 +1,53 @@
 package postgres
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
-	_ "github.com/lib/pq"
-	"log"
+	"sync"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Postgres struct {
-	DB  *sql.DB
-	Uri string
+	db *pgxpool.Pool
 }
 
-func NewPostgres(psqlUri string) *Postgres {
-	db, err := sql.Open("postgres", psqlUri+"?sslmode=disable")
-	if err != nil {
-		log.Fatal(err)
-	}
+// singleton design pattern with once keyword
+// singleton pattern to make sure that I only have one connection pool
+var (
+	pgInstance *Postgres
+	pgOnce     sync.Once
+)
 
-	err = db.Ping()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("Successfully connected to PostgreSQL!")
+func NewPG(ctx context.Context, connString string) (*Postgres, error) {
+	pgOnce.Do(func() {
+		config, err := pgxpool.ParseConfig(connString)
+		if err != nil {
+			panic(err)
+		}
 
-	return &Postgres{DB: db, Uri: psqlUri}
+		config.MaxConns = 50
+		config.MinConns = 10
+		config.MaxConnLifetime = 2 * time.Minute
+
+		db, err := pgxpool.NewWithConfig(ctx, config)
+		if err != nil {
+			panic(err)
+		}
+
+		pgInstance = &Postgres{db: db}
+	})
+
+	fmt.Println("connected to postgres...")
+	return pgInstance, nil
+}
+
+func (p *Postgres) Ping(ctx context.Context) error {
+	return p.db.Ping(ctx)
 }
 
 // Close implement closable interface
 func (p *Postgres) Close() {
-	err := p.DB.Close()
-	if err != nil {
-		panic(err)
-	}
+	p.db.Close()
 }

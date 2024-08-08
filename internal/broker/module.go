@@ -55,11 +55,13 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 		return 0, err
 	}
 
-	// TODO for until connection saved
+	// TODO for until connection saved (concurrent go)
 	for _, connection := range connections {
-		if connection != nil && connection.Channel != nil {
-			*connection.Channel <- msg
-		}
+		func(c *model.Connection, msg *broker.Message) {
+			if c != nil && c.Channel != nil {
+				*c.Channel <- *msg
+			}
+		}(connection, &msg)
 	}
 
 	return int(msgId), nil

@@ -18,7 +18,7 @@ func main() {
 		Host: "localhost:8000",
 		Scenario: option.Scenario{
 			Executor:        "constant-arrival-rate",
-			Rate:            20000,
+			Rate:            3000,
 			Timeunit:        1,
 			Duration:        60,
 			PreAllocatedVUs: 20,

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/MSaeed1381/message-broker/api/server"
 	"github.com/MSaeed1381/message-broker/internal/broker"
 	"github.com/MSaeed1381/message-broker/internal/store"
@@ -19,8 +20,8 @@ import (
 func main() {
 	config := Config{
 		grpcAddr:      "0.0.0.0:8000",
-		storeType:     InMemory,
-		postgresURI:   "postgresql://localhost:5432/message_broker",
+		storeType:     Postgres,
+		postgresURI:   "postgres://postgres:postgres@postgres:5432/message_broker",
 		metricEnable:  true,
 		metricAddress: "0.0.0.0:5555",
 	}
@@ -30,7 +31,10 @@ func main() {
 
 	switch config.storeType {
 	case Postgres:
-		psql := postgres.NewPostgres(config.postgresURI) // connect to postgres
+		psql, err := postgres.NewPG(context.Background(), config.postgresURI) // connect to postgres
+		if err != nil {
+			panic(err)
+		}
 		defer psql.Close()
 		msgStore = postgres.NewMessageInPostgres(*psql)
 	case ScyllaDB: // TODO implement Scylla Database
