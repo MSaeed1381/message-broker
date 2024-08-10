@@ -18,7 +18,7 @@ func NewConnectionInMemory() *ConnectionInMemory {
 	}
 }
 
-func (c *ConnectionInMemory) Save(ctx context.Context, connection *model.Connection) error {
+func (c *ConnectionInMemory) Save(_ context.Context, connection *model.Connection) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.Connections = append(c.Connections, connection)
@@ -26,7 +26,7 @@ func (c *ConnectionInMemory) Save(ctx context.Context, connection *model.Connect
 	return nil
 }
 
-func (c *ConnectionInMemory) GetAllConnections(ctx context.Context) ([]*model.Connection, error) {
+func (c *ConnectionInMemory) GetAllConnections(_ context.Context) ([]*model.Connection, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 

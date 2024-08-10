@@ -5,7 +5,6 @@ import (
 	"github.com/MSaeed1381/message-broker/internal/model"
 	"github.com/MSaeed1381/message-broker/internal/store"
 	"github.com/MSaeed1381/message-broker/internal/utils"
-	"github.com/MSaeed1381/message-broker/pkg/broker"
 	"sync"
 )
 
@@ -30,7 +29,7 @@ func NewTopicInMemory(msgStore store.Message) *TopicInMemory {
 	}
 }
 
-func (t *TopicInMemory) Save(ctx context.Context, topic *model.Topic) error {
+func (t *TopicInMemory) Save(_ context.Context, topic *model.Topic) error {
 	topicWrapper := &TopicMemoryWrapper{
 		Message:    t.MsgStore,
 		Connection: NewConnectionInMemory(),
@@ -46,7 +45,7 @@ func (t *TopicInMemory) Save(ctx context.Context, topic *model.Topic) error {
 	return nil
 }
 
-func (t *TopicInMemory) GetBySubject(ctx context.Context, subject string) (*model.Topic, error) {
+func (t *TopicInMemory) GetBySubject(_ context.Context, subject string) (*model.Topic, error) {
 	tw, ok := t.topics.Load(subject)
 	if !ok {
 		return &model.Topic{}, store.ErrTopicNotFound{Subject: subject}
@@ -68,13 +67,13 @@ func (t *TopicInMemory) GetOpenConnections(ctx context.Context, subject string) 
 	return connections, nil
 }
 
-func (t *TopicInMemory) SaveMessage(ctx context.Context, subject string, message *broker.Message) (uint64, error) {
-	tw, ok := t.topics.Load(subject)
+func (t *TopicInMemory) SaveMessage(ctx context.Context, message *model.Message) (uint64, error) {
+	tw, ok := t.topics.Load(message.Subject)
 	if !ok {
-		return 0, store.ErrTopicNotFound{Subject: subject}
+		return 0, store.ErrTopicNotFound{Subject: message.Subject}
 	}
 
-	msgId, err := tw.(*TopicMemoryWrapper).Message.Save(ctx, message, subject)
+	msgId, err := tw.(*TopicMemoryWrapper).Message.Save(ctx, message)
 	if err != nil {
 		return 0, err
 	}

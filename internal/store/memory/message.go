@@ -5,9 +5,7 @@ import (
 	"github.com/MSaeed1381/message-broker/internal/model"
 	"github.com/MSaeed1381/message-broker/internal/store"
 	"github.com/MSaeed1381/message-broker/internal/utils"
-	"github.com/MSaeed1381/message-broker/pkg/broker"
 	"sync"
-	"time"
 )
 
 type MessageInMemory struct {
@@ -22,20 +20,20 @@ func NewMessageInMemory() *MessageInMemory {
 	}
 }
 
-func (m *MessageInMemory) Save(ctx context.Context, message *broker.Message, _ string) (uint64, error) {
-	_, ok := m.messages.Load(message.Id)
+func (m *MessageInMemory) Save(_ context.Context, message *model.Message) (uint64, error) {
+	_, ok := m.messages.Load(message.BrokerMessage.Id)
 	if ok {
-		return 0, store.ErrMessageAlreadyExists{ID: uint64(message.Id)}
+		return 0, store.ErrMessageAlreadyExists{ID: uint64(message.BrokerMessage.Id)}
 	}
 
 	messageId := m.idGen.Next()
-	message.Id = int(messageId) // set id to broker message
+	message.BrokerMessage.Id = int(messageId) // set id to broker message
 
-	m.messages.Store(messageId, &model.Message{BrokerMessage: message, CreateAt: time.Now()})
+	m.messages.Store(messageId, message)
 	return messageId, nil
 }
 
-func (m *MessageInMemory) GetByID(ctx context.Context, id uint64) (*model.Message, error) {
+func (m *MessageInMemory) GetByID(_ context.Context, id uint64) (*model.Message, error) {
 	message, ok := m.messages.Load(id)
 	if !ok {
 		return &model.Message{}, store.ErrMessageNotFound{ID: id}

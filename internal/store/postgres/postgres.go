@@ -27,8 +27,8 @@ func NewPG(ctx context.Context, connString string) (*Postgres, error) {
 			panic(err)
 		}
 
-		config.MaxConns = 50
-		config.MinConns = 10
+		config.MaxConns = 100
+		config.MinConns = 40
 		config.MaxConnLifetime = 2 * time.Minute
 
 		db, err := pgxpool.NewWithConfig(ctx, config)

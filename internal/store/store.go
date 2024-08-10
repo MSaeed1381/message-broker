@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/MSaeed1381/message-broker/internal/model"
-	"github.com/MSaeed1381/message-broker/pkg/broker"
 )
 
 // Message Store Errors
@@ -41,7 +40,7 @@ func (e ErrMessageInvalid) Error() string {
 
 // Message Save message With Broker Message and return Broker Message From Data Store
 type Message interface {
-	Save(ctx context.Context, message *broker.Message, subject string) (uint64, error)
+	Save(ctx context.Context, message *model.Message) (uint64, error)
 	GetByID(ctx context.Context, id uint64) (*model.Message, error)
 }
 
@@ -68,7 +67,7 @@ type Topic interface {
 	Save(ctx context.Context, topic *model.Topic) error
 	GetBySubject(ctx context.Context, subject string) (*model.Topic, error)
 	GetOpenConnections(ctx context.Context, subject string) ([]*model.Connection, error)
-	SaveMessage(ctx context.Context, subject string, message *broker.Message) (uint64, error)
+	SaveMessage(ctx context.Context, message *model.Message) (uint64, error)
 	GetMessage(ctx context.Context, messageId uint64, subject string) (*model.Message, error)
 	SaveConnection(ctx context.Context, subject string, connection *model.Connection) error
 }

@@ -27,6 +27,7 @@ type Report struct {
 	FetchSuccess   Counter
 	PublishFailure Counter
 	PublishSuccess Counter
+	Dropped        Counter
 }
 
 func NewReport() *Report {
@@ -34,6 +35,6 @@ func NewReport() *Report {
 }
 
 func (r *Report) String() string {
-	return fmt.Sprintf("{Fetch Failure: %d, Success: %d, Publish Failure: %d, Publish Success: %d}",
-		r.FetchFailure.Value(), r.FetchSuccess.Value(), r.PublishFailure.Value(), r.PublishSuccess.Value())
+	return fmt.Sprintf("{Fetch Failure: %d, Success: %d, Publish Failure: %d, Publish Success: %d, Dropped: %d}",
+		r.FetchFailure.Value(), r.FetchSuccess.Value(), r.PublishFailure.Value(), r.PublishSuccess.Value(), r.Dropped.Value())
 }
