@@ -12,6 +12,7 @@ type Config struct {
 	grpcAddr      string
 	storeType     StoreType
 	postgresURI   string
+	scyllaURI     string
 	metricEnable  bool
 	metricAddress string
 }

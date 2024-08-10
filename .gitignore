@@ -7,3 +7,4 @@
 grafana-data/*
 prometheus-data/*
 postgres-data/*
+scylla-data/*

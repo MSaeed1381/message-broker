@@ -1,0 +1,62 @@
+version: "3"
+
+services:
+  scylla:
+    image: scylladb/scylla:latest
+    container_name: scylla
+    ports:
+      - "9042:9042"
+    environment:
+      SCYLLA_CLUSTER_NAME: "scylla-cluster"
+      SCYLLA_KEYSPACE: "message_broker"
+    volumes:
+      - ../scylla-data:/var/lib/scylla
+
+  message_broker:
+    build:
+      context: ../
+      dockerfile: build/Dockerfile
+    container_name: message_broker
+    restart: on-failure
+
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      - scylla
+
+  prometheus:
+    image: docker.io/prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yaml"
+      - '--storage.tsdb.path=/prometheus'
+    volumes:
+      - ../config/prometheus:/etc/prometheus/:ro # ro means read-only
+      - ../prometheus-data:/prometheus
+    restart: unless-stopped
+
+    depends_on:
+      - message_broker
+
+  grafana:
+    image: docker.io/grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../grafana-data:/var/lib/grafana
+    restart: unless-stopped
+
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  scylla-data:
+    driver: local

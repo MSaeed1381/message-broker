@@ -7,6 +7,7 @@ import (
 	"github.com/MSaeed1381/message-broker/internal/store"
 	"github.com/MSaeed1381/message-broker/internal/store/memory"
 	"github.com/MSaeed1381/message-broker/internal/store/postgres"
+	"github.com/MSaeed1381/message-broker/internal/store/scylla"
 	"github.com/MSaeed1381/message-broker/pkg/metric"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -20,8 +21,9 @@ import (
 func main() {
 	config := Config{
 		grpcAddr:      "0.0.0.0:8000",
-		storeType:     Postgres,
+		storeType:     InMemory,
 		postgresURI:   "postgres://postgres:postgres@postgres:5432/message_broker",
+		scyllaURI:     "scylla",
 		metricEnable:  true,
 		metricAddress: "0.0.0.0:5555",
 	}
@@ -38,7 +40,11 @@ func main() {
 		defer psql.Close()
 		msgStore = postgres.NewMessageInPostgres(*psql)
 	case ScyllaDB: // TODO implement Scylla Database
-		break
+		scyllaInstance, err := scylla.NewScylla(context.Background(), config.scyllaURI)
+		if err != nil {
+			panic(err)
+		}
+		defer scyllaInstance.Close()
 	case InMemory:
 		msgStore = nil
 	default:
