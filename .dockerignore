@@ -1,0 +1,5 @@
+postgres-data
+prometheus-data
+scylla-data
+grafana-data
+deployments

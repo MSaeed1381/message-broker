@@ -3,10 +3,8 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"sync"
-	"time"
-
 	"github.com/jackc/pgx/v5/pgxpool"
+	"sync"
 )
 
 type Postgres struct {
@@ -27,9 +25,8 @@ func NewPG(ctx context.Context, connString string) (*Postgres, error) {
 			panic(err)
 		}
 
-		config.MaxConns = 100
-		config.MinConns = 40
-		config.MaxConnLifetime = 2 * time.Minute
+		config.MaxConns = 32
+		config.MinConns = 24
 
 		db, err := pgxpool.NewWithConfig(ctx, config)
 		if err != nil {

@@ -1,4 +1,4 @@
-version: "3"
+version: "3.8"
 
 services:
   scylla:
@@ -11,6 +11,13 @@ services:
       SCYLLA_KEYSPACE: "message_broker"
     volumes:
       - ../scylla-data:/var/lib/scylla
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces ;"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
 
   message_broker:
     build:
@@ -23,7 +30,8 @@ services:
       - "8000:8000"
 
     depends_on:
-      - scylla
+      scylla:
+        condition: service_healthy
 
   prometheus:
     image: docker.io/prom/prometheus

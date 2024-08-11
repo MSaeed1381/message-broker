@@ -10,36 +10,30 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"log"
-	"sync"
 	"time"
 )
 
 type MessageInPostgres struct {
 	psql         Postgres
 	batchHandler *batch.Handler
-	wg           sync.WaitGroup
 }
 
 func NewMessageInPostgres(psql Postgres) *MessageInPostgres {
 	m := &MessageInPostgres{
 		psql: psql,
-		wg:   sync.WaitGroup{},
 	}
 
-	m.batchHandler = batch.NewBatchHandler(m.SaveBulkMessage, 1024)
+	m.batchHandler = batch.NewBatchHandler(m.SaveBulkMessage, 1000)
 	return m
 }
 
 func (m *MessageInPostgres) Save(ctx context.Context, message *model.Message) (uint64, error) {
 
-	start := time.Now()
 	m.batchHandler.AddAndWait(ctx, message)
 
 	if message.BrokerMessage.Id == 0 {
 		return 0, errors.New("saving message failed")
 	}
-
-	fmt.Println(time.Since(start))
 
 	return uint64(message.BrokerMessage.Id), nil
 }

@@ -21,7 +21,7 @@ import (
 func main() {
 	config := Config{
 		grpcAddr:      "0.0.0.0:8000",
-		storeType:     InMemory,
+		storeType:     ScyllaDB,
 		postgresURI:   "postgres://postgres:postgres@postgres:5432/message_broker",
 		scyllaURI:     "scylla",
 		metricEnable:  true,
@@ -39,12 +39,13 @@ func main() {
 		}
 		defer psql.Close()
 		msgStore = postgres.NewMessageInPostgres(*psql)
-	case ScyllaDB: // TODO implement Scylla Database
+	case ScyllaDB:
 		scyllaInstance, err := scylla.NewScylla(context.Background(), config.scyllaURI)
 		if err != nil {
 			panic(err)
 		}
 		defer scyllaInstance.Close()
+		msgStore = scylla.NewMessageInScylla(scyllaInstance)
 	case InMemory:
 		msgStore = nil
 	default:

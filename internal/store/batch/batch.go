@@ -15,7 +15,7 @@ type Item struct {
 func NewItem(message *model.Message) *Item {
 	return &Item{
 		Message: message,
-		Done:    make(chan struct{}),
+		Done:    make(chan struct{}, 1),
 	}
 }
 
@@ -39,6 +39,7 @@ func NewBatchHandler(bulkInsert BulkInserter, bufferSize int) *Handler {
 
 func (h *Handler) Resolve() {
 	buffer := make([]*Item, 0, h.maxBufferSize)
+	ticker := time.NewTicker(5 * time.Second)
 
 	flush := func() {
 		if len(buffer) == 0 {
@@ -63,12 +64,11 @@ func (h *Handler) Resolve() {
 		select {
 		case item := <-h.items:
 			buffer = append(buffer, item)
-
 			if len(buffer) >= h.maxBufferSize {
 				flush()
 			}
 
-		case <-time.After(time.Millisecond * 100):
+		case <-ticker.C:
 			flush()
 		}
 	}
