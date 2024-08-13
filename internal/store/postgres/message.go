@@ -22,14 +22,7 @@ func NewMessageInPostgres(psql Postgres) *MessageInPostgres {
 	m := &MessageInPostgres{
 		psql: psql,
 	}
-
-	config := batch.Config{
-		BufferSize:             2000,
-		FlushDuration:          time.Duration(500) * time.Millisecond,
-		MessageResponseTimeout: time.Duration(5) * time.Second,
-	}
-
-	m.batchHandler = batch.NewBatchHandler(m.SaveBulkMessage, config)
+	m.batchHandler = batch.NewBatchHandler(m.SaveBulkMessage, psql.config.BatchConfig)
 	return m
 }
 

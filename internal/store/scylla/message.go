@@ -21,13 +21,7 @@ func NewMessageInScylla(scylla *Scylla) *MessageInScylla {
 		scylla: scylla,
 	}
 
-	batchConfig := batch.Config{
-		BufferSize:             500,
-		FlushDuration:          time.Duration(500) * time.Millisecond,
-		MessageResponseTimeout: time.Duration(5) * time.Second,
-	}
-
-	m.batchHandler = batch.NewBatchHandler(m.SaveBulkMessage, batchConfig)
+	m.batchHandler = batch.NewBatchHandler(m.SaveBulkMessage, scylla.config.BatchConfig)
 	return m
 }
 

@@ -5,6 +5,7 @@ import (
 	"github.com/MSaeed1381/message-broker/api/server"
 	"github.com/MSaeed1381/message-broker/internal/broker"
 	"github.com/MSaeed1381/message-broker/internal/store"
+	"github.com/MSaeed1381/message-broker/internal/store/batch"
 	"github.com/MSaeed1381/message-broker/internal/store/memory"
 	"github.com/MSaeed1381/message-broker/internal/store/postgres"
 	"github.com/MSaeed1381/message-broker/internal/store/scylla"
@@ -12,6 +13,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	_ "net/http/pprof"
+	"runtime"
+	"time"
 )
 
 // Main requirements:
@@ -22,16 +25,39 @@ import (
 
 func main() {
 	config := Config{
-		grpcAddr:      "0.0.0.0:8000",
-		storeType:     InMemory,
-		postgresURI:   "postgres://postgres:postgres@localhost:5432/message_broker",
-		scyllaURI:     "scylla",
-		metricEnable:  true,
-		metricAddress: "0.0.0.0:5555",
+		grpcAddr:  "0.0.0.0:8000",
+		storeType: InMemory,
+		pgConfig: postgres.Config{
+			JdbcUri:        "postgres://postgres:postgres@localhost:5432/message_broker",
+			MaxConnections: runtime.NumCPU() * 2,
+			MinConnections: 2,
+			BatchConfig: batch.Config{
+				BufferSize:             2000,
+				FlushDuration:          time.Duration(500) * time.Millisecond,
+				MessageResponseTimeout: time.Duration(5) * time.Second,
+			},
+		},
+		scyllaConfig: scylla.Config{
+			Address:        "scylla",
+			Keyspace:       "message_broker",
+			NumConnections: runtime.NumCPU(),
+			BatchConfig: batch.Config{
+				BufferSize:             2000,
+				FlushDuration:          time.Duration(500) * time.Millisecond,
+				MessageResponseTimeout: time.Duration(5) * time.Second,
+			},
+		},
+		metricEnable:    true,
+		metricAddress:   "0.0.0.0:5555",
+		profilerAddress: "0.0.0.0:8080",
 	}
 
+	// create a webserver for profiling
 	go func() {
-		http.ListenAndServe(":8080", nil)
+		err := http.ListenAndServe(config.profilerAddress, nil)
+		if err != nil {
+			return
+		}
 	}()
 
 	// only for persist store in database (for in-memory data store is nil)
@@ -39,14 +65,14 @@ func main() {
 
 	switch config.storeType {
 	case Postgres:
-		psql, err := postgres.NewPG(context.Background(), config.postgresURI) // connect to postgres
+		psql, err := postgres.NewPG(context.Background(), config.pgConfig) // connect to postgres
 		if err != nil {
 			panic(err)
 		}
 		defer psql.Close()
 		msgStore = postgres.NewMessageInPostgres(*psql)
 	case ScyllaDB:
-		scyllaInstance, err := scylla.NewScylla(context.Background(), config.scyllaURI)
+		scyllaInstance, err := scylla.NewScylla(context.Background(), config.scyllaConfig)
 		if err != nil {
 			panic(err)
 		}

@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"runtime"
 	"sync"
 )
 
 type Postgres struct {
-	db *pgxpool.Pool
+	db     *pgxpool.Pool
+	config Config
 }
 
 // singleton design pattern with once keyword
@@ -19,22 +19,22 @@ var (
 	pgOnce     sync.Once
 )
 
-func NewPG(ctx context.Context, connString string) (*Postgres, error) {
+func NewPG(ctx context.Context, conf Config) (*Postgres, error) {
 	pgOnce.Do(func() {
-		config, err := pgxpool.ParseConfig(connString)
+		config, err := pgxpool.ParseConfig(conf.JdbcUri)
 		if err != nil {
 			panic(err)
 		}
 
-		config.MaxConns = int32(runtime.NumCPU())
-		config.MinConns = 2
+		config.MaxConns = int32(conf.MaxConnections)
+		config.MinConns = int32(conf.MaxConnections)
 
 		db, err := pgxpool.NewWithConfig(ctx, config)
 		if err != nil {
 			panic(err)
 		}
 
-		pgInstance = &Postgres{db: db}
+		pgInstance = &Postgres{db: db, config: conf}
 	})
 
 	fmt.Println("connected to postgres...")
