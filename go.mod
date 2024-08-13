@@ -6,6 +6,7 @@ toolchain go1.22.4
 
 require (
 	github.com/gocql/gocql v1.6.0
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/prometheus/client_golang v1.19.1
 	github.com/stretchr/testify v1.9.0

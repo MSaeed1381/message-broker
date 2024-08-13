@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gocql/gocql"
 	"log"
+	"runtime"
 	"sync"
 )
 
@@ -25,7 +26,7 @@ func NewScylla(_ context.Context, connString string) (*Scylla, error) {
 		cluster := gocql.NewCluster(connString)
 		cluster.Keyspace = "message_broker"
 		cluster.Consistency = gocql.One
-		cluster.NumConns = 6
+		cluster.NumConns = runtime.NumCPU()
 
 		session, err := cluster.CreateSession()
 		if err != nil {
@@ -44,9 +45,9 @@ func NewScylla(_ context.Context, connString string) (*Scylla, error) {
 
 // Ping checks the connection to ScyllaDB
 func (s *Scylla) Ping(ctx context.Context) error {
-	//if err := s.session.Query(`SELECT now() FROM postgres.public.users`).Exec(); err != nil {
-	//	return fmt.Errorf("ping failed: %w", err)
-	//}
+	if err := s.session.Query(`SELECT count(*) FROM message_broker.message`).Exec(); err != nil {
+		return fmt.Errorf("ping failed: %w", err)
+	}
 	return nil
 }
 

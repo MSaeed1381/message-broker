@@ -3,10 +3,10 @@ package broker
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/MSaeed1381/message-broker/internal/model"
 	"github.com/MSaeed1381/message-broker/internal/store"
 	"github.com/MSaeed1381/message-broker/pkg/broker"
-	"time"
 )
 
 type Module struct {
@@ -105,14 +105,18 @@ func (m *Module) Fetch(ctx context.Context, subject string, id uint64) (broker.M
 
 	msg, err := m.Topics.GetMessage(ctx, id, subject)
 
-	if err != nil {
+	fmt.Println(err)
+	// TODO (we can check if id is less that current id and if not in map so we can find that was expired)
+	if errors.As(err, &store.ErrMessageNotFound{}) {
 		return broker.Message{}, broker.ErrInvalidID
-	}
-
-	// handle expiration time
-	if time.Now().Sub(msg.CreateAt) > msg.BrokerMessage.Expiration {
+	} else if (errors.As(err, &store.ErrMessageExpired{})) {
 		return broker.Message{}, broker.ErrExpiredID
 	}
+
+	// handle e expiration time
+	//if time.Now().Sub(msg.CreateAt) > msg.BrokerMessage.Expiration {
+	//	return broker.Message{}, broker.ErrExpiredID
+	//}
 
 	return *msg.BrokerMessage, nil
 }

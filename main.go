@@ -23,9 +23,9 @@ import (
 func main() {
 	config := Config{
 		grpcAddr:      "0.0.0.0:8000",
-		storeType:     Postgres,
+		storeType:     InMemory,
 		postgresURI:   "postgres://postgres:postgres@localhost:5432/message_broker",
-		scyllaURI:     "localhost",
+		scyllaURI:     "scylla",
 		metricEnable:  true,
 		metricAddress: "0.0.0.0:5555",
 	}

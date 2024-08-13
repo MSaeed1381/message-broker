@@ -2,8 +2,8 @@ package batch
 
 import (
 	"context"
+	"errors"
 	"github.com/MSaeed1381/message-broker/internal/model"
-	"math"
 	"time"
 )
 
@@ -19,68 +19,65 @@ func NewItem(message *model.Message) *Item {
 	}
 }
 
-type BulkInserter func(ctx context.Context, messages []*model.Message)
+type BulkInserter func(ctx context.Context, items []*Item)
 type Handler struct {
-	items         chan *Item
-	bulkInsertFn  BulkInserter
-	maxBufferSize int
+	items        chan *Item
+	bulkInsertFn BulkInserter
+	config       Config
 }
 
-func NewBatchHandler(bulkInsert BulkInserter, bufferSize int) *Handler {
+func NewBatchHandler(bulkInsert BulkInserter, config Config) *Handler {
 	handler := &Handler{
-		bulkInsertFn:  bulkInsert,
-		items:         make(chan *Item, 1),
-		maxBufferSize: bufferSize,
+		bulkInsertFn: bulkInsert,
+		items:        make(chan *Item, 1),
+		config:       config,
 	}
-	go handler.Resolve()
+	go handler.FlushBufferScheduler()
 
 	return handler
 }
 
-func (h *Handler) Resolve() {
-	buffer := make([]*Item, 0, h.maxBufferSize)
-	ticker := time.NewTicker(500 * time.Millisecond)
+func (h *Handler) FlushBufferScheduler() {
+	buffer := make([]*Item, 0, h.config.BufferSize)
+	ticker := time.NewTicker(h.config.FlushDuration)
+
+	defer ticker.Stop() // TODO how to close ticker?
 
 	flush := func() {
 		if len(buffer) == 0 {
 			return
 		}
 
-		tmp := make([]*model.Message, 0, len(buffer))
-		for _, item := range buffer {
-			tmp = append(tmp, item.Message)
-		}
-
-		maxIndex := int(math.Min(float64(len(buffer)), float64(h.maxBufferSize)))
-		h.bulkInsertFn(context.Background(), tmp)
-
-		for _, item := range buffer[:maxIndex] {
-			close(item.Done)
-		}
-		buffer = buffer[maxIndex:]
+		h.bulkInsertFn(context.Background(), buffer)
+		buffer = buffer[len(buffer):]
 	}
 
 	for {
 		select {
 		case item := <-h.items:
 			buffer = append(buffer, item)
-			if len(buffer) >= h.maxBufferSize {
+			if len(buffer) >= h.config.BufferSize {
 				flush()
 			}
-
 		case <-ticker.C:
 			flush()
 		}
 	}
 }
 
-func (h *Handler) AddAndWait(ctx context.Context, msg *model.Message) {
+func (h *Handler) AddAndWait(ctx context.Context, msg *model.Message) error {
 	item := NewItem(msg)
-	h.items <- item
+	h.items <- item // write new item on a safe channel that flusher can communicate with that
 
 	select {
 	case <-ctx.Done():
-		return
+		return errors.New("context canceled")
 	case <-item.Done:
+		if item.Message.BrokerMessage.Id == 0 {
+			return errors.New("message saving failed")
+		}
+		return nil
+	case <-time.After(h.config.MessageResponseTimeout):
+		return errors.New("message response timeout")
 	}
 }

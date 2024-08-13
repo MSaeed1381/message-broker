@@ -5,38 +5,42 @@ import (
 	"github.com/MSaeed1381/message-broker/internal/model"
 	"github.com/MSaeed1381/message-broker/internal/store"
 	"github.com/MSaeed1381/message-broker/internal/utils"
-	"sync"
+	"time"
 )
 
 type MessageInMemory struct {
-	messages sync.Map
+	MsgStore *HeapMap
 	idGen    utils.IdGenerator
 }
 
 func NewMessageInMemory() *MessageInMemory {
 	return &MessageInMemory{
-		messages: sync.Map{},
+		MsgStore: NewHeapMap(time.Second * 2),
 		idGen:    utils.IdGenerator{},
 	}
 }
 
 func (m *MessageInMemory) Save(_ context.Context, message *model.Message) (uint64, error) {
-	_, ok := m.messages.Load(message.BrokerMessage.Id)
-	if ok {
+	if _, ok := m.MsgStore.Get(message.BrokerMessage.Id); ok {
 		return 0, store.ErrMessageAlreadyExists{ID: message.BrokerMessage.Id}
 	}
 
-	message.BrokerMessage.Id = m.idGen.Next() // set id to broker message
+	newId := m.idGen.Next()
+	message.BrokerMessage.Id = newId // set id to broker message
+	m.MsgStore.Set(newId, message, message.BrokerMessage.Expiration)
 
-	m.messages.Store(message.BrokerMessage.Id, message)
 	return message.BrokerMessage.Id, nil
 }
 
 func (m *MessageInMemory) GetByID(_ context.Context, id uint64) (*model.Message, error) {
-	message, ok := m.messages.Load(id)
+	message, ok := m.MsgStore.Get(id)
+
+	// message is invalid and didn't publish
 	if !ok {
 		return &model.Message{}, store.ErrMessageNotFound{ID: id}
+	} else if message == nil {
+		return &model.Message{}, store.ErrMessageExpired{ID: id}
 	}
 
-	return message.(*model.Message), nil
+	return message, nil
 }

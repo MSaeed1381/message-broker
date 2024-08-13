@@ -23,19 +23,23 @@ func NewMessageInPostgres(psql Postgres) *MessageInPostgres {
 		psql: psql,
 	}
 
-	m.batchHandler = batch.NewBatchHandler(m.SaveBulkMessage, 2000)
+	config := batch.Config{
+		BufferSize:             2000,
+		FlushDuration:          time.Duration(500) * time.Millisecond,
+		MessageResponseTimeout: time.Duration(5) * time.Second,
+	}
+
+	m.batchHandler = batch.NewBatchHandler(m.SaveBulkMessage, config)
 	return m
 }
 
 func (m *MessageInPostgres) Save(ctx context.Context, message *model.Message) (uint64, error) {
-
-	m.batchHandler.AddAndWait(ctx, message)
-
-	if message.BrokerMessage.Id == 0 {
-		return 0, errors.New("saving message failed")
+	err := m.batchHandler.AddAndWait(ctx, message)
+	if err != nil {
+		return 0, err
 	}
 
-	return uint64(message.BrokerMessage.Id), nil
+	return message.BrokerMessage.Id, nil
 }
 
 func (m *MessageInPostgres) GetByID(ctx context.Context, id uint64) (*model.Message, error) {
@@ -73,15 +77,15 @@ func (m *MessageInPostgres) GetByID(ctx context.Context, id uint64) (*model.Mess
 	return msg, nil
 }
 
-func (m *MessageInPostgres) SaveBulkMessage(ctx context.Context, messages []*model.Message) {
+func (m *MessageInPostgres) SaveBulkMessage(ctx context.Context, items []*batch.Item) {
 	query := `INSERT INTO message(body, expiration, createdAt, subject) VALUES(@body, @expiration, @createdAt, @subject) RETURNING id`
 
 	newBatch := &pgx.Batch{}
-	for _, msg := range messages {
+	for _, item := range items {
 		args := pgx.NamedArgs{
-			"body":       msg.BrokerMessage.Body,
-			"expiration": msg.BrokerMessage.Expiration.Seconds(),
-			"subject":    msg.Subject,
+			"body":       item.Message.BrokerMessage.Body,
+			"expiration": item.Message.BrokerMessage.Expiration.Seconds(),
+			"subject":    item.Message.Subject,
 			"createdAt":  time.Now().UTC(),
 		}
 		newBatch.Queue(query, args)
@@ -96,23 +100,24 @@ func (m *MessageInPostgres) SaveBulkMessage(ctx context.Context, messages []*mod
 		}
 	}(results)
 
-	for _, msg := range messages {
+	for _, item := range items {
 		var id uint64
 		err := results.QueryRow().Scan(&id)
+		item.Message.BrokerMessage.Id = id
 		if err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) {
-				log.Printf("message %d already exists", msg.BrokerMessage.Id)
+				log.Printf("message %d already exists", item.Message.BrokerMessage.Id)
 				continue
 			}
 
-			msg.BrokerMessage.Id = 0 // Error when saving batch
+			item.Message.BrokerMessage.Id = 0 // Error when saving batch
 
 			fmt.Println(err)
-			fmt.Printf("unable to insert row %d: %e", msg.BrokerMessage.Id, err)
+			fmt.Printf("unable to insert row %d: %e", item.Message.BrokerMessage.Id, err)
 		}
 
-		msg.BrokerMessage.Id = id
+		close(item.Done)
 	}
 
 	return

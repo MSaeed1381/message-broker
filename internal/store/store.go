@@ -38,6 +38,14 @@ func (e ErrMessageInvalid) Error() string {
 	return fmt.Sprintf("message %d invalid.", e.ID)
 }
 
+type ErrMessageExpired struct {
+	ID uint64
+}
+
+func (e ErrMessageExpired) Error() string {
+	return fmt.Sprintf("message %d expired.", e.ID)
+}
+
 // Message Save message With Broker Message and return Broker Message From Data Store
 type Message interface {
 	Save(ctx context.Context, message *model.Message) (uint64, error)
