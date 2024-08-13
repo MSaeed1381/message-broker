@@ -39,7 +39,7 @@ func NewBatchHandler(bulkInsert BulkInserter, bufferSize int) *Handler {
 
 func (h *Handler) Resolve() {
 	buffer := make([]*Item, 0, h.maxBufferSize)
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(500 * time.Millisecond)
 
 	flush := func() {
 		if len(buffer) == 0 {

@@ -23,20 +23,20 @@ func NewMessageInScylla(scylla *Scylla) *MessageInScylla {
 		scylla: scylla,
 	}
 
-	m.batchHandler = batch.NewBatchHandler(m.SaveBulkMessage, 3000)
+	m.batchHandler = batch.NewBatchHandler(m.SaveBulkMessage, 500)
 	return m
 }
 
 func (m *MessageInScylla) Save(ctx context.Context, message *model.Message) (uint64, error) {
 
-	start := time.Now()
+	//start := time.Now()
 	m.batchHandler.AddAndWait(ctx, message)
 
 	if message.BrokerMessage.Id == 0 {
 		return 0, errors.New("saving message failed")
 	}
 
-	fmt.Println(time.Since(start))
+	//fmt.Println(time.Since(start))
 
 	return uint64(message.BrokerMessage.Id), nil
 }
@@ -55,7 +55,7 @@ func (m *MessageInScylla) GetByID(ctx context.Context, id uint64) (*model.Messag
 
 	msg := &model.Message{
 		BrokerMessage: &broker.Message{
-			Id:         int(id),
+			Id:         id,
 			Body:       body,
 			Expiration: time.Duration(expiration) * time.Second,
 		},
@@ -70,7 +70,7 @@ func (m *MessageInScylla) SaveBulkMessage(ctx context.Context, messages []*model
 	newBatch := m.scylla.session.NewBatch(gocql.UnloggedBatch)
 
 	for _, msg := range messages {
-		newId := int(m.idGenerator.Next())
+		newId := m.idGenerator.Next()
 		query := `INSERT INTO message_broker.messages (id, body, createdAt, subject, expiration) VALUES (?, ?, ?, ?, ?)`
 		newBatch.Query(query, newId, msg.BrokerMessage.Body, msg.CreateAt, msg.Subject, int64(msg.BrokerMessage.Expiration.Seconds()))
 

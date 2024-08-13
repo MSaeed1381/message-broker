@@ -23,14 +23,13 @@ func NewMessageInMemory() *MessageInMemory {
 func (m *MessageInMemory) Save(_ context.Context, message *model.Message) (uint64, error) {
 	_, ok := m.messages.Load(message.BrokerMessage.Id)
 	if ok {
-		return 0, store.ErrMessageAlreadyExists{ID: uint64(message.BrokerMessage.Id)}
+		return 0, store.ErrMessageAlreadyExists{ID: message.BrokerMessage.Id}
 	}
 
-	messageId := m.idGen.Next()
-	message.BrokerMessage.Id = int(messageId) // set id to broker message
+	message.BrokerMessage.Id = m.idGen.Next() // set id to broker message
 
-	m.messages.Store(messageId, message)
-	return messageId, nil
+	m.messages.Store(message.BrokerMessage.Id, message)
+	return message.BrokerMessage.Id, nil
 }
 
 func (m *MessageInMemory) GetByID(_ context.Context, id uint64) (*model.Message, error) {

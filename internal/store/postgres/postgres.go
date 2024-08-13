@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"runtime"
 	"sync"
 )
 
@@ -25,8 +26,8 @@ func NewPG(ctx context.Context, connString string) (*Postgres, error) {
 			panic(err)
 		}
 
-		config.MaxConns = 32
-		config.MinConns = 24
+		config.MaxConns = int32(runtime.NumCPU())
+		config.MinConns = 2
 
 		db, err := pgxpool.NewWithConfig(ctx, config)
 		if err != nil {

@@ -28,10 +28,14 @@ services:
 
     ports:
       - "8000:8000"
+      - "6060:6060"
 
     depends_on:
       scylla:
         condition: service_healthy
+
+    volumes:
+      - ../profiling:/app/profiling
 
   prometheus:
     image: docker.io/prom/prometheus

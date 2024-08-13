@@ -10,6 +10,8 @@ import (
 	"github.com/MSaeed1381/message-broker/internal/store/scylla"
 	"github.com/MSaeed1381/message-broker/pkg/metric"
 	"github.com/prometheus/client_golang/prometheus"
+	"net/http"
+	_ "net/http/pprof"
 )
 
 // Main requirements:
@@ -21,12 +23,16 @@ import (
 func main() {
 	config := Config{
 		grpcAddr:      "0.0.0.0:8000",
-		storeType:     ScyllaDB,
-		postgresURI:   "postgres://postgres:postgres@postgres:5432/message_broker",
-		scyllaURI:     "scylla",
+		storeType:     Postgres,
+		postgresURI:   "postgres://postgres:postgres@localhost:5432/message_broker",
+		scyllaURI:     "localhost",
 		metricEnable:  true,
 		metricAddress: "0.0.0.0:5555",
 	}
+
+	go func() {
+		http.ListenAndServe(":8080", nil)
+	}()
 
 	// only for persist store in database (for in-memory data store is nil)
 	var msgStore store.Message

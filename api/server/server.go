@@ -42,7 +42,7 @@ func (s *BrokerServer) Serve(addr string) {
 func (s *BrokerServer) Publish(ctx context.Context, req *proto.PublishRequest) (*proto.PublishResponse, error) {
 	start := time.Now()
 
-	msg := broker.Message{
+	msg := &broker.Message{
 		Body:       string(req.GetBody()),
 		Expiration: time.Duration(float64(req.GetExpirationSeconds()) * float64(time.Second)),
 	}
@@ -95,7 +95,7 @@ func (s *BrokerServer) Subscribe(req *proto.SubscribeRequest, res proto.Broker_S
 func (s *BrokerServer) Fetch(ctx context.Context, req *proto.FetchRequest) (*proto.MessageResponse, error) {
 	start := time.Now()
 
-	msg, err := s.service.Fetch(ctx, req.GetSubject(), int(req.GetId()))
+	msg, err := s.service.Fetch(ctx, req.GetSubject(), uint64(req.GetId()))
 	if err != nil {
 		s.prometheusController.IncMethodCallCount(metric.Fetch, metric.FAILURE)
 		s.prometheusController.ObserveMethodDuration(metric.Fetch, metric.FAILURE, time.Since(start).Seconds())

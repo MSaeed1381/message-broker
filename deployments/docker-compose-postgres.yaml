@@ -19,10 +19,14 @@ services:
       context: ../
       dockerfile: build/Dockerfile
     container_name: message_broker
-    restart: on-failure
+    restart: no
 
     ports:
       - "8000:8000"
+      - "6060:6060"
+
+    volumes:
+      - ../profiling:/app/profiling
 
     depends_on:
       - postgres

@@ -10,7 +10,7 @@ type Message struct {
 	// This parameter is optional. If it's not provided,
 	// the Message can't be accessible through Fetch()
 	// id is unique per every subject
-	Id int
+	Id uint64
 	// Body of the message
 	Body string
 	// The time that message can be accessible through Fetch()
@@ -27,7 +27,7 @@ type Broker interface {
 	// It should preserve the order. So if we are publishing messages
 	// A, B and C, all subscribers should get these messages as
 	// A, B and C.
-	Publish(ctx context.Context, subject string, msg Message) (int, error)
+	Publish(ctx context.Context, subject string, msg *Message) (uint64, error)
 
 	// Subscribe listens to every publish, and returns the messages to all
 	// subscribed clients ( channels ).
@@ -37,5 +37,5 @@ type Broker interface {
 
 	// Fetch enables us to retrieve a message that is already published, if
 	// it's not expired yet.
-	Fetch(ctx context.Context, subject string, id int) (Message, error)
+	Fetch(ctx context.Context, subject string, id uint64) (Message, error)
 }

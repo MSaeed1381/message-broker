@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gocql/gocql"
 	"log"
-	"runtime"
 	"sync"
 )
 
@@ -22,48 +21,32 @@ var (
 // NewScylla initializes a new ScyllaDB connection using a singleton pattern
 func NewScylla(_ context.Context, connString string) (*Scylla, error) {
 	var err error
-	//scyllaOnce.Do(func() {
-	//	cluster := gocql.NewCluster(connString)
-	//	cluster.Keyspace = "message_broker"
-	//	cluster.Consistency = gocql.One
-	//	cluster.NumConns = 6
-	//
-	//	session, err := cluster.CreateSession()
-	//	if err != nil {
-	//		log.Printf("Failed to create ScyllaDB session: %v", err)
-	//		return
-	//	}
-	//
-	//	scyllaInstance = &Scylla{
-	//		session: session,
-	//	}
-	//	fmt.Println("ScyllaDB session created successfully")
-	//})
+	scyllaOnce.Do(func() {
+		cluster := gocql.NewCluster(connString)
+		cluster.Keyspace = "message_broker"
+		cluster.Consistency = gocql.One
+		cluster.NumConns = 6
 
-	cluster := gocql.NewCluster(connString)
-	cluster.Keyspace = "message_broker"
-	cluster.Consistency = gocql.One
-	cluster.NumConns = runtime.NumCPU() * 2
+		session, err := cluster.CreateSession()
+		if err != nil {
+			log.Printf("Failed to create ScyllaDB session: %v", err)
+			return
+		}
 
-	session, err := cluster.CreateSession()
-	if err != nil {
-		log.Printf("Failed to create ScyllaDB session: %v", err)
-		return nil, err
-	}
-
-	scyllaInstance = &Scylla{
-		session: session,
-	}
-	fmt.Println("ScyllaDB session created successfully")
+		scyllaInstance = &Scylla{
+			session: session,
+		}
+		fmt.Println("ScyllaDB session created successfully")
+	})
 
 	return scyllaInstance, err
 }
 
 // Ping checks the connection to ScyllaDB
 func (s *Scylla) Ping(ctx context.Context) error {
-	if err := s.session.Query(`SELECT now() FROM postgres.public.users`).Exec(); err != nil {
-		return fmt.Errorf("ping failed: %w", err)
-	}
+	//if err := s.session.Query(`SELECT now() FROM postgres.public.users`).Exec(); err != nil {
+	//	return fmt.Errorf("ping failed: %w", err)
+	//}
 	return nil
 }
 

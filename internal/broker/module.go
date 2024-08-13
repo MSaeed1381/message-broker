@@ -27,7 +27,7 @@ func (m *Module) Close() error {
 	return nil
 }
 
-func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message) (int, error) {
+func (m *Module) Publish(ctx context.Context, subject string, msg *broker.Message) (uint64, error) {
 	if m.Closed {
 		return 0, broker.ErrUnavailable
 	}
@@ -35,7 +35,7 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 	topic, err := m.Topics.GetBySubject(ctx, subject)
 
 	// TODO synchronize this
-	if errors.As(err, &store.ErrTopicNotFound{}) {
+	if err != nil && errors.As(err, &store.ErrTopicNotFound{}) {
 		// create the new model and saves to data store
 		topic = model.NewTopicModel(subject)
 
@@ -45,7 +45,7 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 		}
 	}
 
-	msgId, err := m.Topics.SaveMessage(ctx, model.NewMessageModel(subject, &msg))
+	msgId, err := m.Topics.SaveMessage(ctx, model.NewMessageModel(subject, msg))
 	if err != nil {
 		return 0, err
 	}
@@ -61,10 +61,10 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 			if c != nil && c.Channel != nil {
 				*c.Channel <- *msg
 			}
-		}(connection, &msg)
+		}(connection, msg)
 	}
 
-	return int(msgId), nil
+	return msgId, nil
 }
 
 func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.Message, error) {
@@ -98,12 +98,12 @@ func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.M
 	return result, nil
 }
 
-func (m *Module) Fetch(ctx context.Context, subject string, id int) (broker.Message, error) {
+func (m *Module) Fetch(ctx context.Context, subject string, id uint64) (broker.Message, error) {
 	if m.Closed {
 		return broker.Message{}, broker.ErrUnavailable
 	}
 
-	msg, err := m.Topics.GetMessage(ctx, uint64(id), subject)
+	msg, err := m.Topics.GetMessage(ctx, id, subject)
 
 	if err != nil {
 		return broker.Message{}, broker.ErrInvalidID

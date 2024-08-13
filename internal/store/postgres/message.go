@@ -23,7 +23,7 @@ func NewMessageInPostgres(psql Postgres) *MessageInPostgres {
 		psql: psql,
 	}
 
-	m.batchHandler = batch.NewBatchHandler(m.SaveBulkMessage, 1000)
+	m.batchHandler = batch.NewBatchHandler(m.SaveBulkMessage, 2000)
 	return m
 }
 
@@ -62,7 +62,7 @@ func (m *MessageInPostgres) GetByID(ctx context.Context, id uint64) (*model.Mess
 
 	msg := &model.Message{
 		BrokerMessage: &broker.Message{
-			Id:         int(id),
+			Id:         id,
 			Body:       body,
 			Expiration: time.Duration(expiration) * time.Second,
 		},
@@ -112,7 +112,7 @@ func (m *MessageInPostgres) SaveBulkMessage(ctx context.Context, messages []*mod
 			fmt.Printf("unable to insert row %d: %e", msg.BrokerMessage.Id, err)
 		}
 
-		msg.BrokerMessage.Id = int(id)
+		msg.BrokerMessage.Id = id
 	}
 
 	return
