@@ -6,6 +6,7 @@ import (
 	"github.com/MSaeed1381/message-broker/internal/broker"
 	"github.com/MSaeed1381/message-broker/internal/store"
 	"github.com/MSaeed1381/message-broker/internal/store/batch"
+	"github.com/MSaeed1381/message-broker/internal/store/cache"
 	"github.com/MSaeed1381/message-broker/internal/store/memory"
 	"github.com/MSaeed1381/message-broker/internal/store/postgres"
 	"github.com/MSaeed1381/message-broker/internal/store/scylla"
@@ -26,8 +27,8 @@ import (
 func main() {
 	config := Config{
 		grpcAddr:  "0.0.0.0:8000",
-		storeType: InMemory,
-		pgConfig: postgres.Config{
+		storeType: ScyllaDB,
+		postgres: postgres.Config{
 			JdbcUri:        "postgres://postgres:postgres@localhost:5432/message_broker",
 			MaxConnections: runtime.NumCPU() * 2,
 			MinConnections: 2,
@@ -37,7 +38,7 @@ func main() {
 				MessageResponseTimeout: time.Duration(5) * time.Second,
 			},
 		},
-		scyllaConfig: scylla.Config{
+		scylla: scylla.Config{
 			Address:        "scylla",
 			Keyspace:       "message_broker",
 			NumConnections: runtime.NumCPU(),
@@ -50,6 +51,11 @@ func main() {
 		metricEnable:    true,
 		metricAddress:   "0.0.0.0:5555",
 		profilerAddress: "0.0.0.0:8080",
+		cache: cache.Config{
+			Address:  "cache:6379",
+			Password: "",
+			DBNumber: 0,
+		},
 	}
 
 	// create a webserver for profiling
@@ -65,14 +71,14 @@ func main() {
 
 	switch config.storeType {
 	case Postgres:
-		psql, err := postgres.NewPG(context.Background(), config.pgConfig) // connect to postgres
+		psql, err := postgres.NewPG(context.Background(), config.postgres) // connect to postgres
 		if err != nil {
 			panic(err)
 		}
 		defer psql.Close()
 		msgStore = postgres.NewMessageInPostgres(*psql)
 	case ScyllaDB:
-		scyllaInstance, err := scylla.NewScylla(context.Background(), config.scyllaConfig)
+		scyllaInstance, err := scylla.NewScylla(context.Background(), config.scylla)
 		if err != nil {
 			panic(err)
 		}
@@ -95,7 +101,7 @@ func main() {
 		prometheusController = &metric.NoImpl{}
 	}
 
-	brokerModule := broker.NewModule(topicStore)
+	brokerModule := broker.NewModule(topicStore, cache.NewRedisClient(config.cache))
 	grpcServer := server.NewBrokerServer(brokerModule, prometheusController)
 	grpcServer.Serve(config.grpcAddr)
 }

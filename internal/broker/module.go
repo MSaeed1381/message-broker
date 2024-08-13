@@ -3,21 +3,23 @@ package broker
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/MSaeed1381/message-broker/internal/model"
 	"github.com/MSaeed1381/message-broker/internal/store"
+	"github.com/MSaeed1381/message-broker/internal/store/cache"
 	"github.com/MSaeed1381/message-broker/pkg/broker"
 )
 
 type Module struct {
 	Topics store.Topic // have msg Store and connection Store
+	Cache  cache.Cache // store black-list for message expiration
 	Closed bool
 }
 
-func NewModule(topic store.Topic) broker.Broker {
+func NewModule(topic store.Topic, cache cache.Cache) broker.Broker {
 	return &Module{
 		Topics: topic,
 		Closed: false,
+		Cache:  cache,
 	}
 }
 
@@ -64,6 +66,11 @@ func (m *Module) Publish(ctx context.Context, subject string, msg *broker.Messag
 		}(connection, msg)
 	}
 
+	// set the msg in cache memory
+	if err := m.Cache.Set(ctx, msgId, msg.Expiration); err != nil {
+		return 0, err
+	}
+
 	return msgId, nil
 }
 
@@ -103,20 +110,32 @@ func (m *Module) Fetch(ctx context.Context, subject string, id uint64) (broker.M
 		return broker.Message{}, broker.ErrUnavailable
 	}
 
+	// expiration handling section
+	expired, err := m.Cache.IsKeyExpired(ctx, id)
+
+	if err != nil {
+		if errors.As(err, &store.ErrMessageNotFound{}) {
+			return broker.Message{}, broker.ErrInvalidID
+		}
+		return broker.Message{}, err
+	}
+
+	if expired {
+		return broker.Message{}, broker.ErrExpiredID
+	}
+
+	// get message from data store
 	msg, err := m.Topics.GetMessage(ctx, id, subject)
 
-	fmt.Println(err)
+	// handling error occurs in store level
 	// TODO (we can check if id is less that current id and if not in map so we can find that was expired)
 	if errors.As(err, &store.ErrMessageNotFound{}) {
 		return broker.Message{}, broker.ErrInvalidID
 	} else if (errors.As(err, &store.ErrMessageExpired{})) {
 		return broker.Message{}, broker.ErrExpiredID
+	} else if err != nil {
+		return broker.Message{}, err
 	}
-
-	// handle e expiration time
-	//if time.Now().Sub(msg.CreateAt) > msg.BrokerMessage.Expiration {
-	//	return broker.Message{}, broker.ErrExpiredID
-	//}
 
 	return *msg.BrokerMessage, nil
 }

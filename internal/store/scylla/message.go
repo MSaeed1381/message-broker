@@ -63,13 +63,13 @@ func (m *MessageInScylla) SaveBulkMessage(ctx context.Context, items []*batch.It
 	newBatch := m.scylla.session.NewBatch(gocql.UnloggedBatch)
 
 	for _, item := range items {
-		newId := uuid.New().ID()
+		newId := uint64(uuid.New().ID())
 		query := `INSERT INTO message_broker.message (id, body, createdAt, subject, expiration) VALUES (?, ?, ?, ?, ?) USING TTL ?`
 		newBatch.Query(query, newId, item.Message.BrokerMessage.Body, item.Message.CreateAt, item.Message.Subject,
-			int64(item.Message.BrokerMessage.Expiration.Seconds()), int64(item.Message.BrokerMessage.Expiration.Seconds()))
+			uint64(item.Message.BrokerMessage.Expiration.Seconds()), uint64(item.Message.BrokerMessage.Expiration.Seconds()))
 
-		item.Message.BrokerMessage.Id = uint64(newId)
-
+		fmt.Println(newId)
+		item.Message.BrokerMessage.Id = newId
 		close(item.Done)
 	}
 

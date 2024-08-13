@@ -2,6 +2,7 @@ package broker
 
 import (
 	"context"
+	"github.com/MSaeed1381/message-broker/internal/store/cache"
 	"github.com/MSaeed1381/message-broker/internal/store/memory"
 	"github.com/MSaeed1381/message-broker/pkg/broker"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +20,7 @@ var (
 
 func TestMain(m *testing.M) {
 	rand.Seed(time.Now().Unix())
-	service = NewModule(memory.NewTopicInMemory(nil))
+	service = NewModule(memory.NewTopicInMemory(nil), cache.NewNoImpl())
 	m.Run()
 }
 
@@ -45,7 +46,7 @@ func TestFetchShouldFailOnClosed(t *testing.T) {
 	err := service.Close()
 	assert.Nil(t, err)
 
-	_, err = service.Fetch(mainCtx, "ali", rand.Intn(100))
+	_, err = service.Fetch(mainCtx, "ali", uint64(rand.Intn(100)))
 	assert.Equal(t, broker.ErrUnavailable, err)
 }
 
@@ -97,10 +98,10 @@ func TestPublishShouldPreserveOrder(t *testing.T) {
 	messages := make([]broker.Message, n)
 	sub, _ := service.Subscribe(mainCtx, "ali")
 	for i := 0; i < n; i++ {
-		messages[i] = createMessage()
-		messages[i].Id = i + 1 // order TODO
+		messages[i] = *createMessage()
+		messages[i].Id = uint64(i + 1) // order TODO
 
-		_, _ = service.Publish(mainCtx, "ali", messages[i])
+		_, _ = service.Publish(mainCtx, "ali", &messages[i])
 	}
 
 	for i := 0; i < n; i++ {
@@ -275,7 +276,7 @@ func TestDataRace(t *testing.T) {
 
 			default:
 				id, err := service.Publish(mainCtx, "ali", createMessageWithExpire(duration))
-				ids <- id
+				ids <- int(id)
 				assert.Nil(t, err)
 			}
 		}
@@ -307,7 +308,7 @@ func TestDataRace(t *testing.T) {
 				return
 
 			case id := <-ids:
-				_, err := service.Fetch(mainCtx, "ali", id)
+				_, err := service.Fetch(mainCtx, "ali", uint64(id))
 				assert.Nil(t, err)
 			}
 		}
@@ -342,19 +343,19 @@ func randomString(n int) string {
 	return string(b)
 }
 
-func createMessage() broker.Message {
+func createMessage() *broker.Message {
 	body := randomString(16)
 
-	return broker.Message{
+	return &broker.Message{
 		Body:       body,
 		Expiration: 0,
 	}
 }
 
-func createMessageWithExpire(duration time.Duration) broker.Message {
+func createMessageWithExpire(duration time.Duration) *broker.Message {
 	body := randomString(16)
 
-	return broker.Message{
+	return &broker.Message{
 		Body:       body,
 		Expiration: duration,
 	}

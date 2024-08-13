@@ -57,7 +57,7 @@ func (s *BrokerServer) Publish(ctx context.Context, req *proto.PublishRequest) (
 
 	s.prometheusController.IncMethodCallCount(metric.Publish, metric.SUCCESS)
 	s.prometheusController.ObserveMethodDuration(metric.Publish, metric.SUCCESS, time.Since(start).Seconds())
-	return &proto.PublishResponse{Id: int32(messageID)}, nil
+	return &proto.PublishResponse{Id: messageID}, nil
 }
 
 func (s *BrokerServer) Subscribe(req *proto.SubscribeRequest, res proto.Broker_SubscribeServer) error {
@@ -95,7 +95,7 @@ func (s *BrokerServer) Subscribe(req *proto.SubscribeRequest, res proto.Broker_S
 func (s *BrokerServer) Fetch(ctx context.Context, req *proto.FetchRequest) (*proto.MessageResponse, error) {
 	start := time.Now()
 
-	msg, err := s.service.Fetch(ctx, req.GetSubject(), uint64(req.GetId()))
+	msg, err := s.service.Fetch(ctx, req.GetSubject(), req.GetId())
 	if err != nil {
 		s.prometheusController.IncMethodCallCount(metric.Fetch, metric.FAILURE)
 		s.prometheusController.ObserveMethodDuration(metric.Fetch, metric.FAILURE, time.Since(start).Seconds())

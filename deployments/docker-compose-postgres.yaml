@@ -1,4 +1,13 @@
 services:
+  cache:
+    image: redis
+    container_name: redis
+    volumes:
+      - ../cache-data:/var/lib/redis/data
+    ports:
+      - "6379:6379"
+    restart: on-failure
+
   postgres:
     container_name: postgres
     image: postgres:latest
@@ -28,6 +37,7 @@ services:
 
     depends_on:
       - postgres
+      - cache
 
   prometheus:
     image: docker.io/prom/prometheus

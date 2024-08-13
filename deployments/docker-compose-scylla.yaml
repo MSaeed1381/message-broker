@@ -1,4 +1,14 @@
 services:
+  cache:
+    image: redis
+    container_name: redis
+    volumes:
+      - ../cache-data:/var/lib/redis/data
+    ports:
+      - "6379:6379"
+    restart: on-failure
+
+
   scylla:
     image: scylladb/scylla:latest
     container_name: scylla
@@ -30,7 +40,7 @@ services:
 
     depends_on:
       scylla:
-        condition: service_healthy
+          condition: service_healthy
 
     volumes:
       - ../profiling:/app/profiling
@@ -69,4 +79,6 @@ volumes:
   grafana-data:
     driver: local
   scylla-data:
+    driver: local
+  cache-data:
     driver: local
