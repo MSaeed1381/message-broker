@@ -5,7 +5,6 @@ import (
 	"github.com/MSaeed1381/message-broker/api/server"
 	"github.com/MSaeed1381/message-broker/internal/broker"
 	"github.com/MSaeed1381/message-broker/internal/store"
-	"github.com/MSaeed1381/message-broker/internal/store/batch"
 	"github.com/MSaeed1381/message-broker/internal/store/cache"
 	"github.com/MSaeed1381/message-broker/internal/store/memory"
 	"github.com/MSaeed1381/message-broker/internal/store/postgres"
@@ -14,8 +13,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	_ "net/http/pprof"
-	"runtime"
-	"time"
 )
 
 // Main requirements:
@@ -25,51 +22,18 @@ import (
 // 	  for every base functionality ( publish, subscribe etc. )
 
 func main() {
-	config := Config{
-		grpcAddr:  "0.0.0.0:8000",
-		storeType: ScyllaDB,
-		postgres: postgres.Config{
-			JdbcUri:        "postgres://postgres:postgres@localhost:5432/message_broker",
-			MaxConnections: runtime.NumCPU() * 2,
-			MinConnections: 2,
-			BatchConfig: batch.Config{
-				BufferSize:             2000,
-				FlushDuration:          time.Duration(500) * time.Millisecond,
-				MessageResponseTimeout: time.Duration(5) * time.Second,
-			},
-		},
-		scylla: scylla.Config{
-			Address:        "scylla",
-			Keyspace:       "message_broker",
-			NumConnections: runtime.NumCPU(),
-			BatchConfig: batch.Config{
-				BufferSize:             2000,
-				FlushDuration:          time.Duration(500) * time.Millisecond,
-				MessageResponseTimeout: time.Duration(5) * time.Second,
-			},
-		},
-		metricEnable:    true,
-		metricAddress:   "0.0.0.0:5555",
-		profilerAddress: "0.0.0.0:8080",
-		cache: cache.Config{
-			Address:  "cache:6379",
-			Password: "",
-			DBNumber: 0,
-		},
-		broker: broker.Config{
-			ChannelBufferSize: 100,
-		},
-	}
+	config := DefaultConfig()
+	go initProfiler(config)                                                 // create a webserver for profiling
+	msgStore := initDataStore(config)                                       // only for persist store in database (for in-memory data store is nil)
+	cacheStore := initCacheMemory(config)                                   // create cache store
+	topicStore := memory.NewTopicInMemory(msgStore)                         // create new topic store
+	prometheusController := initPrometheus(config)                          // define metric
+	brokerModule := broker.NewModule(topicStore, cacheStore, config.broker) // create new broker module
+	grpcServer := server.NewBrokerServer(brokerModule, prometheusController)
+	grpcServer.Serve(config.grpcAddr)
+}
 
-	// create a webserver for profiling
-	go func() {
-		err := http.ListenAndServe(config.profilerAddress, nil)
-		if err != nil {
-			return
-		}
-	}()
-
-	// only for persist store in database (for in-memory data store is nil)
+func initDataStore(config Config) store.Message {
 	var msgStore store.Message
 
 	switch config.storeType {
@@ -93,18 +57,36 @@ func main() {
 		panic("unknown store type")
 	}
 
-	topicStore := memory.NewTopicInMemory(msgStore)
+	return msgStore
+}
 
+func initCacheMemory(config Config) cache.Cache {
+	var cacheStore cache.Cache
+	if config.cacheEnable {
+		cacheStore = cache.NewRedisClient(config.cache)
+	} else {
+		cacheStore = cache.NewNoImpl()
+	}
+
+	return cacheStore
+}
+
+func initPrometheus(config Config) metric.Metric {
 	var prometheusController metric.Metric
 	if config.metricEnable {
-		reg := prometheus.NewRegistry()
+		reg := prometheus.NewRegistry() // create new registry for gRPC metrics
 		prometheusController = metric.NewPrometheusController(reg)
 		go prometheusController.Serve(reg, config.metricAddress) // start prometheus controller socket on another port
 	} else {
 		prometheusController = &metric.NoImpl{}
 	}
 
-	brokerModule := broker.NewModule(topicStore, cache.NewRedisClient(config.cache), config.broker)
-	grpcServer := server.NewBrokerServer(brokerModule, prometheusController)
-	grpcServer.Serve(config.grpcAddr)
+	return prometheusController
+}
+
+func initProfiler(config Config) {
+	err := http.ListenAndServe(config.profilerAddress, nil)
+	if err != nil {
+		return
+	}
 }

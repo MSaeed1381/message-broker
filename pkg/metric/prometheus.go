@@ -2,7 +2,6 @@ package metric
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
 )
@@ -23,7 +22,7 @@ func NewPrometheusController(reg prometheus.Registerer) *PrometheusController {
 			[]string{"method", "status"},
 		),
 
-		methodDuration: promauto.NewSummaryVec(
+		methodDuration: prometheus.NewSummaryVec(
 			prometheus.SummaryOpts{
 				Name:       "rpc_method_duration_seconds",
 				Help:       "Latency of each call in seconds",
