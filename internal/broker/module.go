@@ -13,57 +13,51 @@ type Module struct {
 	Topics store.Topic // have msg Store and connection Store
 	Cache  cache.Cache // store black-list for message expiration
 	Closed bool
+	conf   Config
 }
 
-func NewModule(topic store.Topic, cache cache.Cache) broker.Broker {
+func NewModule(topic store.Topic, cache cache.Cache, config Config) broker.Broker {
 	return &Module{
 		Topics: topic,
 		Closed: false,
 		Cache:  cache,
+		conf:   config,
 	}
 }
 
-// Close TODO implement with Channel
 func (m *Module) Close() error {
 	m.Closed = true
 	return nil
 }
 
-func (m *Module) Publish(ctx context.Context, subject string, msg *broker.Message) (uint64, error) {
+func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message) (uint64, error) {
 	if m.Closed {
 		return 0, broker.ErrUnavailable
 	}
 
 	topic, err := m.Topics.GetBySubject(ctx, subject)
-
-	// TODO synchronize this
-	if err != nil && errors.As(err, &store.ErrTopicNotFound{}) {
-		// create the new model and saves to data store
-		topic = model.NewTopicModel(subject)
-
-		err := m.Topics.Save(ctx, topic)
-		if err != nil {
+	if err != nil {
+		if errors.As(err, &store.ErrTopicNotFound{}) {
+			// create the new model and saves to data store
+			topic = model.NewTopicModel(subject)
+			if err := m.Topics.Save(ctx, topic); err != nil {
+				return 0, err
+			}
+		} else {
 			return 0, err
 		}
 	}
 
-	msgId, err := m.Topics.SaveMessage(ctx, model.NewMessageModel(subject, msg))
+	// save the message in its topic and return msgId
+	message := model.NewMessageModel(subject, &msg)
+	msgId, err := m.Topics.SaveMessage(ctx, message)
 	if err != nil {
 		return 0, err
 	}
 
-	connections, err := m.Topics.GetOpenConnections(ctx, subject)
-	if err != nil {
+	// add message to each channel that subscribe for this topic
+	if err := m.Topics.SendMessageToSubscribers(ctx, subject, message); err != nil {
 		return 0, err
-	}
-
-	// TODO for until connection saved (concurrent go)
-	for _, connection := range connections {
-		func(c *model.Connection, msg *broker.Message) {
-			if c != nil && c.Channel != nil {
-				*c.Channel <- *msg
-			}
-		}(connection, msg)
 	}
 
 	// set the msg in cache memory
@@ -81,24 +75,18 @@ func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.M
 
 	topic, err := m.Topics.GetBySubject(ctx, subject)
 	if err != nil {
-		topic = model.NewTopicModel(subject)
-
-		err := m.Topics.Save(ctx, topic)
-		if err != nil {
+		if errors.As(err, &store.ErrTopicNotFound{}) {
+			topic = model.NewTopicModel(subject)
+			if err := m.Topics.Save(ctx, topic); err != nil {
+				return nil, err
+			}
+		} else {
 			return nil, err
 		}
 	}
+	result := make(chan broker.Message, m.conf.ChannelBufferSize)
 
-	// TODO put size as constant in config file
-	result := make(chan broker.Message, 1000)
-
-	err = m.Topics.SaveConnection(
-		ctx,
-		subject,
-		model.NewConnectionModel(&result),
-	)
-
-	if err != nil {
+	if err = m.Topics.SaveConnection(ctx, subject, model.NewConnectionModel(result)); err != nil {
 		return nil, err
 	}
 
@@ -128,12 +116,12 @@ func (m *Module) Fetch(ctx context.Context, subject string, id uint64) (broker.M
 	msg, err := m.Topics.GetMessage(ctx, id, subject)
 
 	// handling error occurs in store level
-	// TODO (we can check if id is less that current id and if not in map so we can find that was expired)
-	if errors.As(err, &store.ErrMessageNotFound{}) {
-		return broker.Message{}, broker.ErrInvalidID
-	} else if (errors.As(err, &store.ErrMessageExpired{})) {
-		return broker.Message{}, broker.ErrExpiredID
-	} else if err != nil {
+	if err != nil {
+		if errors.As(err, &store.ErrMessageNotFound{}) {
+			return broker.Message{}, broker.ErrInvalidID
+		} else if (errors.As(err, &store.ErrMessageExpired{})) {
+			return broker.Message{}, broker.ErrExpiredID
+		}
 		return broker.Message{}, err
 	}
 

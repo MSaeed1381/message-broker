@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/MSaeed1381/message-broker/pkg/broker"
+	"sync"
 	"time"
 )
 
@@ -26,14 +27,15 @@ type Topic struct {
 
 // Connection for store channel (this must be synchronized by mutex)
 type Connection struct {
-	ID      uint64
-	Channel *chan broker.Message
+	ID        uint64
+	Channel   chan broker.Message
+	ChanMutex sync.Mutex
 }
 
 func NewTopicModel(subject string) *Topic {
 	return &Topic{Subject: subject}
 }
 
-func NewConnectionModel(channel *chan broker.Message) *Connection {
+func NewConnectionModel(channel chan broker.Message) *Connection {
 	return &Connection{Channel: channel}
 }

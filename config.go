@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/MSaeed1381/message-broker/internal/broker"
 	"github.com/MSaeed1381/message-broker/internal/store/cache"
 	"github.com/MSaeed1381/message-broker/internal/store/postgres"
 	"github.com/MSaeed1381/message-broker/internal/store/scylla"
@@ -23,4 +24,5 @@ type Config struct {
 	metricAddress   string
 	profilerAddress string
 	cache           cache.Config
+	broker          broker.Config
 }

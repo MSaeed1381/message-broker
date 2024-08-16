@@ -6,6 +6,7 @@ import (
 	"github.com/MSaeed1381/message-broker/internal/store"
 	"github.com/MSaeed1381/message-broker/internal/utils"
 	"sync"
+	"time"
 )
 
 // TopicMemoryWrapper wrap one model.Topic instance
@@ -92,6 +93,11 @@ func (t *TopicInMemory) GetMessage(ctx context.Context, messageId uint64, subjec
 		return nil, err
 	}
 
+	// check expiration of the message
+	if time.Now().Sub(msg.CreateAt) > msg.BrokerMessage.Expiration {
+		return nil, store.ErrMessageExpired{ID: msg.BrokerMessage.Id}
+	}
+
 	return msg, nil
 }
 
@@ -102,6 +108,18 @@ func (t *TopicInMemory) SaveConnection(ctx context.Context, subject string, conn
 	}
 
 	if err := tw.(*TopicMemoryWrapper).Connection.Save(ctx, connection); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *TopicInMemory) SendMessageToSubscribers(ctx context.Context, subject string, message *model.Message) error {
+	tw, ok := t.topics.Load(subject)
+	if !ok {
+		return store.ErrTopicNotFound{Subject: subject}
+	}
+
+	if err := tw.(*TopicMemoryWrapper).Connection.SendMessageToSubscribers(ctx, message); err != nil {
 		return err
 	}
 	return nil

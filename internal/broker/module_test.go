@@ -20,7 +20,7 @@ var (
 
 func TestMain(m *testing.M) {
 	rand.Seed(time.Now().Unix())
-	service = NewModule(memory.NewTopicInMemory(nil), cache.NewNoImpl())
+	service = NewModule(memory.NewTopicInMemory(nil), cache.NewNoImpl(), Config{ChannelBufferSize: 100})
 	m.Run()
 }
 
@@ -67,7 +67,7 @@ func TestSubscribeShouldNotFail(t *testing.T) {
 
 func TestPublishShouldSendMessageToSubscribedChan(t *testing.T) {
 	msg := createMessage()
-	msg.Id = 1 // id starts from 1 TODO
+	msg.Id = 1 // id starts from 1
 
 	sub, _ := service.Subscribe(mainCtx, "ali")
 	_, _ = service.Publish(mainCtx, "ali", msg)
@@ -78,7 +78,7 @@ func TestPublishShouldSendMessageToSubscribedChan(t *testing.T) {
 
 func TestPublishShouldSendMessageToSubscribedChans(t *testing.T) {
 	msg := createMessage()
-	msg.Id = 1 // id starts from 1 TODO
+	msg.Id = 1 // id starts from 1
 
 	sub1, _ := service.Subscribe(mainCtx, "ali")
 	sub2, _ := service.Subscribe(mainCtx, "ali")
@@ -98,10 +98,10 @@ func TestPublishShouldPreserveOrder(t *testing.T) {
 	messages := make([]broker.Message, n)
 	sub, _ := service.Subscribe(mainCtx, "ali")
 	for i := 0; i < n; i++ {
-		messages[i] = *createMessage()
-		messages[i].Id = uint64(i + 1) // order TODO
+		messages[i] = createMessage()
+		messages[i].Id = uint64(i + 1)
 
-		_, _ = service.Publish(mainCtx, "ali", &messages[i])
+		_, _ = service.Publish(mainCtx, "ali", messages[i])
 	}
 
 	for i := 0; i < n; i++ {
@@ -113,7 +113,7 @@ func TestPublishShouldPreserveOrder(t *testing.T) {
 
 func TestPublishShouldNotSendToOtherSubscriptions(t *testing.T) {
 	msg := createMessage()
-	msg.Id = 1 // id starts from 1 TODO
+	msg.Id = 1 // id starts from 1
 
 	ali, _ := service.Subscribe(mainCtx, "ali")
 	maryam, _ := service.Subscribe(mainCtx, "maryam")
@@ -129,7 +129,7 @@ func TestPublishShouldNotSendToOtherSubscriptions(t *testing.T) {
 
 func TestNonExpiredMessageShouldBeFetchable(t *testing.T) {
 	msg := createMessageWithExpire(time.Second * 10)
-	msg.Id = 1 // id starts from 1 TODO
+	msg.Id = 1 // id starts from 1
 
 	id, _ := service.Publish(mainCtx, "ali", msg)
 	fMsg, _ := service.Fetch(mainCtx, "ali", id)
@@ -343,19 +343,19 @@ func randomString(n int) string {
 	return string(b)
 }
 
-func createMessage() *broker.Message {
+func createMessage() broker.Message {
 	body := randomString(16)
 
-	return &broker.Message{
+	return broker.Message{
 		Body:       body,
 		Expiration: 0,
 	}
 }
 
-func createMessageWithExpire(duration time.Duration) *broker.Message {
+func createMessageWithExpire(duration time.Duration) broker.Message {
 	body := randomString(16)
 
-	return &broker.Message{
+	return broker.Message{
 		Body:       body,
 		Expiration: duration,
 	}

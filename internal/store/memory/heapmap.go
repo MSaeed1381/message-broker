@@ -46,6 +46,7 @@ func (pq *PriorityQueue) Pop() any {
 type HeapMap struct {
 	messages        sync.Map
 	pq              PriorityQueue
+	pqMutex         sync.Mutex
 	cleanupInterval time.Duration
 }
 
@@ -70,7 +71,9 @@ func (m *HeapMap) Set(msgId uint64, msg *model.Message, ttl time.Duration) {
 	}
 
 	m.messages.Store(msgId, msg) // store message
+	m.pqMutex.Lock()
 	heap.Push(&m.pq, item)
+	m.pqMutex.Unlock()
 }
 
 // Get retrieves a value by key. Returns the value and a boolean indicating if the key was found and is still valid.
@@ -97,6 +100,10 @@ func (m *HeapMap) Get(msgId uint64) (*model.Message, bool) {
 // Cleanup removes expired items from the map.
 func (m *HeapMap) Cleanup() {
 	now := time.Now().UnixNano()
+
+	m.pqMutex.Lock() // Lock the mutex for safe access to the priority queue
+	defer m.pqMutex.Unlock()
+
 	for m.pq.Len() > 0 {
 		head := m.pq[0]
 		if now <= head.Expiration {

@@ -78,6 +78,7 @@ type Topic interface {
 	SaveMessage(ctx context.Context, message *model.Message) (uint64, error)
 	GetMessage(ctx context.Context, messageId uint64, subject string) (*model.Message, error)
 	SaveConnection(ctx context.Context, subject string, connection *model.Connection) error
+	SendMessageToSubscribers(ctx context.Context, subject string, message *model.Message) error
 }
 
 type Connection interface {

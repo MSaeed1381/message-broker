@@ -56,6 +56,9 @@ func main() {
 			Password: "",
 			DBNumber: 0,
 		},
+		broker: broker.Config{
+			ChannelBufferSize: 100,
+		},
 	}
 
 	// create a webserver for profiling
@@ -101,7 +104,7 @@ func main() {
 		prometheusController = &metric.NoImpl{}
 	}
 
-	brokerModule := broker.NewModule(topicStore, cache.NewRedisClient(config.cache))
+	brokerModule := broker.NewModule(topicStore, cache.NewRedisClient(config.cache), config.broker)
 	grpcServer := server.NewBrokerServer(brokerModule, prometheusController)
 	grpcServer.Serve(config.grpcAddr)
 }
