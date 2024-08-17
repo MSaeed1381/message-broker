@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scylla
+  labels:
+    app: scylla
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scylla
+  template:
+    metadata:
+      labels:
+        app: scylla
+    spec:
+      containers:
+        - name: scylla
+          image: scylladb/scylla:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9042
+          env:
+            - name: SCYLLA_CLUSTER_NAME
+              value: "scylla-cluster"
+            - name: SCYLLA_KEYSPACE
+              value: "message_broker"
+          volumeMounts:
+            - name: scylla-data
+              mountPath: /var/lib/scylla
+          livenessProbe:
+            exec:
+              command:
+                - "cqlsh"
+                - "-e"
+                - "describe keyspaces ;"
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+      volumes:
+        - name: scylla-data
+          hostPath:
+            path: /mnt/scylla-data

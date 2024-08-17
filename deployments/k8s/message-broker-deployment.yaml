@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-broker
+  labels:
+    app: message-broker
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: message-broker
+  template:
+    metadata:
+      labels:
+        app: message-broker
+    spec:
+      containers:
+        - name: message-broker
+          image: msaeed1381/broker:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+            - containerPort: 6060
+          volumeMounts:
+            - name: profiling
+              mountPath: /app/profiling
+      volumes:
+        - name: profiling
+          hostPath:
+            path: /mnt/profiling
