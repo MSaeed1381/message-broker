@@ -47,7 +47,7 @@ func (s *BrokerServer) Publish(ctx context.Context, req *proto.PublishRequest) (
 		Expiration: time.Duration(float64(req.GetExpirationSeconds()) * float64(time.Second)),
 	}
 
-	messageID, err := s.service.Publish(ctx, req.GetSubject(), msg)
+	messageID, err := s.service.Publish(ctx, req.GetSubject(), *msg)
 
 	if err != nil {
 		s.prometheusController.IncMethodCallCount(metric.Publish, metric.FAILURE)

@@ -6,7 +6,6 @@ import (
 	"github.com/MSaeed1381/message-broker/internal/store/cache"
 	"github.com/MSaeed1381/message-broker/internal/store/postgres"
 	"github.com/MSaeed1381/message-broker/internal/store/scylla"
-	"runtime"
 	"time"
 )
 
@@ -19,16 +18,17 @@ const (
 )
 
 type Config struct {
-	grpcAddr        string
-	storeType       StoreType
-	postgres        postgres.Config
-	scylla          scylla.Config
-	metricEnable    bool
-	metricAddress   string
-	profilerAddress string
-	cacheEnable     bool
-	cache           cache.Config
-	broker          broker.Config
+	grpcAddr         string
+	storeType        StoreType
+	postgres         postgres.Config
+	scylla           scylla.Config
+	metricEnable     bool
+	metricAddress    string
+	profilerAddress  string
+	cacheEnable      bool
+	cache            cache.Config
+	broker           broker.Config
+	kubernetesEnable bool
 }
 
 func DefaultConfig() Config {
@@ -37,20 +37,20 @@ func DefaultConfig() Config {
 		storeType: ScyllaDB,
 		postgres: postgres.Config{
 			JdbcUri:        "postgres://postgres:postgres@localhost:5432/message_broker",
-			MaxConnections: runtime.NumCPU() * 2,
-			MinConnections: 2,
+			MaxConnections: 1,
+			MinConnections: 1,
 			BatchConfig: batch.Config{
-				BufferSize:             2000,
-				FlushDuration:          time.Duration(500) * time.Millisecond,
-				MessageResponseTimeout: time.Duration(5) * time.Second,
+				BufferSize:             1024,
+				FlushDuration:          time.Duration(1000) * time.Millisecond,
+				MessageResponseTimeout: time.Duration(10) * time.Second,
 			},
 		},
 		scylla: scylla.Config{
 			Address:        "scylla",
 			Keyspace:       "message_broker",
-			NumConnections: runtime.NumCPU(),
+			NumConnections: 4,
 			BatchConfig: batch.Config{
-				BufferSize:             2000,
+				BufferSize:             256,
 				FlushDuration:          time.Duration(500) * time.Millisecond,
 				MessageResponseTimeout: time.Duration(5) * time.Second,
 			},
@@ -67,5 +67,6 @@ func DefaultConfig() Config {
 		broker: broker.Config{
 			ChannelBufferSize: 100,
 		},
+		kubernetesEnable: false,
 	}
 }

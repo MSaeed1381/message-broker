@@ -89,11 +89,6 @@ func (m *HeapMap) Get(msgId uint64) (*model.Message, bool) {
 	}
 
 	msg := item.(*model.Message)
-	// handle expiration time
-	if time.Now().Sub(msg.CreateAt) > msg.BrokerMessage.Expiration {
-		return nil, true
-	}
-
 	return msg, true
 }
 

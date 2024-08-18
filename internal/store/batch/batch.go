@@ -41,7 +41,7 @@ func (h *Handler) FlushBufferScheduler() {
 	buffer := make([]*Item, 0, h.config.BufferSize)
 	ticker := time.NewTicker(h.config.FlushDuration)
 
-	defer ticker.Stop() // TODO how to close ticker?
+	defer ticker.Stop()
 
 	flush := func() {
 		if len(buffer) == 0 {
@@ -49,7 +49,7 @@ func (h *Handler) FlushBufferScheduler() {
 		}
 
 		h.bulkInsertFn(context.Background(), buffer)
-		buffer = buffer[len(buffer):]
+		buffer = buffer[:0]
 	}
 
 	for {

@@ -59,6 +59,10 @@ func (m *MessageInScylla) GetByID(ctx context.Context, id uint64) (*model.Messag
 	return msg, nil
 }
 
+func (m *MessageInScylla) Close() {
+	m.Close()
+}
+
 func (m *MessageInScylla) SaveBulkMessage(ctx context.Context, items []*batch.Item) {
 	newBatch := m.scylla.session.NewBatch(gocql.UnloggedBatch)
 
@@ -68,7 +72,6 @@ func (m *MessageInScylla) SaveBulkMessage(ctx context.Context, items []*batch.It
 		newBatch.Query(query, newId, item.Message.BrokerMessage.Body, item.Message.CreateAt, item.Message.Subject,
 			uint64(item.Message.BrokerMessage.Expiration.Seconds()), uint64(item.Message.BrokerMessage.Expiration.Seconds()))
 
-		fmt.Println(newId)
 		item.Message.BrokerMessage.Id = newId
 		close(item.Done)
 	}

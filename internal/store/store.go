@@ -50,6 +50,7 @@ func (e ErrMessageExpired) Error() string {
 type Message interface {
 	Save(ctx context.Context, message *model.Message) (uint64, error)
 	GetByID(ctx context.Context, id uint64) (*model.Message, error)
+	Close()
 }
 
 // Topic Store Errors
@@ -73,7 +74,7 @@ func (e ErrTopicAlreadyExists) Error() string {
 
 type Topic interface {
 	Save(ctx context.Context, topic *model.Topic) error
-	GetBySubject(ctx context.Context, subject string) (*model.Topic, error)
+	CreateTopicIfNotExists(ctx context.Context, subject string)
 	GetOpenConnections(ctx context.Context, subject string) ([]*model.Connection, error)
 	SaveMessage(ctx context.Context, message *model.Message) (uint64, error)
 	GetMessage(ctx context.Context, messageId uint64, subject string) (*model.Message, error)

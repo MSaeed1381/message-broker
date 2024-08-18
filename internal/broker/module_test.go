@@ -2,6 +2,7 @@ package broker
 
 import (
 	"context"
+	"github.com/MSaeed1381/message-broker/internal/cluster"
 	"github.com/MSaeed1381/message-broker/internal/store/cache"
 	"github.com/MSaeed1381/message-broker/internal/store/memory"
 	"github.com/MSaeed1381/message-broker/pkg/broker"
@@ -20,7 +21,7 @@ var (
 
 func TestMain(m *testing.M) {
 	rand.Seed(time.Now().Unix())
-	service = NewModule(memory.NewTopicInMemory(nil), cache.NewNoImpl(), Config{ChannelBufferSize: 100})
+	service = NewModule(memory.NewTopicInMemory(nil), cache.NewNoImpl(), Config{ChannelBufferSize: 100}, cluster.NewNoImpl())
 	m.Run()
 }
 

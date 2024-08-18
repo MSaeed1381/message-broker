@@ -5,3 +5,4 @@ CREATE TABLE IF NOT EXISTS message (
                                      subject VARCHAR NOT NULL,
                                      expiration BIGINT
 );
+

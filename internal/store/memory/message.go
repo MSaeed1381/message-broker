@@ -44,3 +44,5 @@ func (m *MessageInMemory) GetByID(_ context.Context, id uint64) (*model.Message,
 
 	return message, nil
 }
+
+func (m *MessageInMemory) Close() {}

@@ -46,12 +46,15 @@ func (t *TopicInMemory) Save(_ context.Context, topic *model.Topic) error {
 	return nil
 }
 
-func (t *TopicInMemory) GetBySubject(_ context.Context, subject string) (*model.Topic, error) {
-	tw, ok := t.topics.Load(subject)
+func (t *TopicInMemory) CreateTopicIfNotExists(ctx context.Context, subject string) {
+	_, ok := t.topics.Load(subject)
 	if !ok {
-		return &model.Topic{}, store.ErrTopicNotFound{Subject: subject}
+		err := t.Save(ctx, model.NewTopicModel(subject))
+		if err != nil {
+			return
+		}
 	}
-	return tw.(*TopicMemoryWrapper).topic, nil
+	return
 }
 
 func (t *TopicInMemory) GetOpenConnections(ctx context.Context, subject string) ([]*model.Connection, error) {
@@ -93,7 +96,7 @@ func (t *TopicInMemory) GetMessage(ctx context.Context, messageId uint64, subjec
 		return nil, err
 	}
 
-	// check expiration of the message
+	//check expiration of the message
 	if time.Now().Sub(msg.CreateAt) > msg.BrokerMessage.Expiration {
 		return nil, store.ErrMessageExpired{ID: msg.BrokerMessage.Id}
 	}

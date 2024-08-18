@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/MSaeed1381/message-broker/api/server"
 	"github.com/MSaeed1381/message-broker/internal/broker"
+	"github.com/MSaeed1381/message-broker/internal/cluster"
 	"github.com/MSaeed1381/message-broker/internal/store"
 	"github.com/MSaeed1381/message-broker/internal/store/cache"
 	"github.com/MSaeed1381/message-broker/internal/store/memory"
@@ -23,16 +24,21 @@ import (
 
 func main() {
 	config := DefaultConfig()
-	go initProfiler(config)                                                 // create a webserver for profiling
-	msgStore := initDataStore(config)                                       // only for persist store in database (for in-memory data store is nil)
-	cacheStore := initCacheMemory(config)                                   // create cache store
-	topicStore := memory.NewTopicInMemory(msgStore)                         // create new topic store
-	prometheusController := initPrometheus(config)                          // define metric
-	brokerModule := broker.NewModule(topicStore, cacheStore, config.broker) // create new broker module
+	go initProfiler(config) // create a webserver for profiling
+	msgStore := initDataStore(config)
+	if msgStore != nil {
+		defer msgStore.Close()
+	} // only for persist store in database (for in-memory data store is nil) // close the data store
+	cacheStore := initCacheMemory(config)                                               // create cache store
+	topicStore := memory.NewTopicInMemory(msgStore)                                     // create new topic store
+	prometheusController := initPrometheus(config)                                      // define metric
+	kubeClient := initKubernetesClient(config)                                          // initial kubernetes pod registration
+	brokerModule := broker.NewModule(topicStore, cacheStore, config.broker, kubeClient) // create new broker module
 	grpcServer := server.NewBrokerServer(brokerModule, prometheusController)
 	grpcServer.Serve(config.grpcAddr)
 }
 
+// initDataStore creates a database connection that can in-memory, postgres and scylla
 func initDataStore(config Config) store.Message {
 	var msgStore store.Message
 
@@ -42,14 +48,13 @@ func initDataStore(config Config) store.Message {
 		if err != nil {
 			panic(err)
 		}
-		defer psql.Close()
 		msgStore = postgres.NewMessageInPostgres(*psql)
 	case ScyllaDB:
-		scyllaInstance, err := scylla.NewScylla(context.Background(), config.scylla)
+		scyllaInstance, err := scylla.NewScylla(context.Background(), config.scylla) // create a scylla session
 		if err != nil {
 			panic(err)
 		}
-		defer scyllaInstance.Close()
+
 		msgStore = scylla.NewMessageInScylla(scyllaInstance)
 	case InMemory:
 		msgStore = nil
@@ -60,6 +65,7 @@ func initDataStore(config Config) store.Message {
 	return msgStore
 }
 
+// initCacheMemory create a connection to redis server if the config set
 func initCacheMemory(config Config) cache.Cache {
 	var cacheStore cache.Cache
 	if config.cacheEnable {
@@ -71,6 +77,7 @@ func initCacheMemory(config Config) cache.Cache {
 	return cacheStore
 }
 
+// initPrometheus initialize prometheus metrics
 func initPrometheus(config Config) metric.Metric {
 	var prometheusController metric.Metric
 	if config.metricEnable {
@@ -84,9 +91,20 @@ func initPrometheus(config Config) metric.Metric {
 	return prometheusController
 }
 
+// initProfiler open a port for profiling
 func initProfiler(config Config) {
 	err := http.ListenAndServe(config.profilerAddress, nil)
 	if err != nil {
 		return
 	}
+}
+
+func initKubernetesClient(config Config) cluster.KubeClient {
+	var kubeClient cluster.KubeClient
+	if config.kubernetesEnable {
+		kubeClient = cluster.NewClient()
+	} else {
+		kubeClient = cluster.NewNoImpl()
+	}
+	return kubeClient
 }

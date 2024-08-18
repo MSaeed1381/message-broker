@@ -70,6 +70,10 @@ func (m *MessageInPostgres) GetByID(ctx context.Context, id uint64) (*model.Mess
 	return msg, nil
 }
 
+func (m *MessageInPostgres) Close() {
+	m.Close()
+}
+
 func (m *MessageInPostgres) SaveBulkMessage(ctx context.Context, items []*batch.Item) {
 	query := `INSERT INTO message(body, expiration, createdAt, subject) VALUES(@body, @expiration, @createdAt, @subject) RETURNING id`
 
