@@ -28,7 +28,7 @@ type Topic struct {
 // Connection for store channel (this must be synchronized by mutex)
 type Connection struct {
 	ID        uint64
-	Channel   chan broker.Message
+	Channel   []broker.Message
 	ChanMutex sync.Mutex
 }
 
