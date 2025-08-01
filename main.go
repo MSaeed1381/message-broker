@@ -23,7 +23,7 @@ import (
 // 	  for every base functionality ( publish, subscribe etc. )
 
 func main() {
-	config := DefaultConfig()
+	// config := DefaultConfig()
 	go initProfiler(config) // create a webserver for profiling
 	msgStore := initDataStore(config)
 	if msgStore != nil {
