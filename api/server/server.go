@@ -68,7 +68,7 @@ func (s *BrokerServer) Subscribe(req *proto.SubscribeRequest, res proto.Broker_S
 		s.prometheusController.IncMethodCallCount(metric.Subscribe, metric.FAILURE)
 		s.prometheusController.ObserveMethodDuration(metric.Subscribe, metric.FAILURE, time.Since(start).Seconds())
 		return err
-	}
+	}klj
 
 	s.prometheusController.IncMethodCallCount(metric.Subscribe, metric.SUCCESS)
 	s.prometheusController.ObserveMethodDuration(metric.Subscribe, metric.SUCCESS, time.Since(start).Seconds())
