@@ -42,9 +42,10 @@ func main() {
 func initDataStore(config Config) store.Message {
 	var msgStore store.Message
 
+	newConfig := config.scylla
 	switch config.storeType {
 	case Postgres:
-		psql, err := postgres.NewPG(context.Background(), config.postgres) // connect to postgres
+		psql, err := postgres.NewPG(context.Background(), newConfig) // connect to postgres
 		if err != nil {
 			panic(err)
 		}
