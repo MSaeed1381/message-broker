@@ -18,11 +18,11 @@ const (
 )
 
 type Config struct {
-	grpcAddr         string
-	storeType        StoreType
-	postgres         postgres.Config
-	scylla           scylla.Config
-	metricEnable     bool
+	// grpcAddr         string
+	// storeType        StoreType
+	// postgres         postgres.Config
+	// scylla           scylla.Config
+	// metricEnable     bool
 	metricAddress    string
 	profilerAddress  string
 	cacheEnable      bool
