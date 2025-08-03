@@ -40,7 +40,7 @@ func main() {
 
 // initDataStore creates a database connection that can in-memory, postgres and scylla
 func initDataStore(config Config) store.Message {
-	var msgStore store.Message
+	// var msgStore store.Message
 
 	switch config.storeType {
 	case Postgres:
