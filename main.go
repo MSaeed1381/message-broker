@@ -66,9 +66,9 @@ func initDataStore(config Config) store.Message {
 }
 
 // initCacheMemory create a connection to redis server if the config set
-func initCacheMemory(config Config) cache.Cache {
-	var cacheStore cache.Cache
-	if config.cacheEnable {
+// func initCacheMemory(config Config) cache.Cache {
+// 	var cacheStore cache.Cache
+// 	if config.cacheEnable {
 		cacheStore = cache.NewRedisClient(config.cache)
 	} else {
 		cacheStore = cache.NewNoImpl()
