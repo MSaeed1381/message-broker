@@ -28,10 +28,10 @@ func main() {
 	msgStore := initDataStore(config)
 	if msgStore != nil {
 		defer msgStore.Close()
-	} // only for persist store in database (for in-memory data store is nil) // close the data store
-	cacheStore := initCacheMemory(config)                                               // create cache store
-	topicStore := memory.NewTopicInMemory(msgStore)                                     // create new topic store
-	prometheusController := initPrometheus(config)                                      // define metric
+	// } // only for persist store in database (for in-memory data store is nil) // close the data store
+	// cacheStore := initCacheMemory(config)                                               // create cache store
+	// topicStore := memory.NewTopicInMemory(msgStore)                                     // create new topic store
+	// prometheusController := initPrometheus(config)                                      // define metric
 	kubeClient := initKubernetesClient(config)                                          // initial kubernetes pod registration
 	brokerModule := broker.NewModule(topicStore, cacheStore, config.broker, kubeClient) // create new broker module
 	grpcServer := server.NewBrokerServer(brokerModule, prometheusController)
