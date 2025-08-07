@@ -32,11 +32,11 @@ func main() {
 	cacheStore := initCacheMemory(config)                                               // create cache store
 	topicStore := memory.NewTopicInMemory(msgStore)                                     // create new topic store
 	prometheusController := initPrometheus(config)                                      // define metric
-	kubeClient := initKubernetesClient(config)                                          // initial kubernetes pod registration
-	brokerModule := broker.NewModule(topicStore, cacheStore, config.broker, kubeClient) // create new broker module
-	grpcServer := server.NewBrokerServer(brokerModule, prometheusController)
-	grpcServer.Serve(config.grpcAddr)
-}
+// 	kubeClient := initKubernetesClient(config)                                          // initial kubernetes pod registration
+// 	brokerModule := broker.NewModule(topicStore, cacheStore, config.broker, kubeClient) // create new broker module
+// 	grpcServer := server.NewBrokerServer(brokerModule, prometheusController)
+// 	grpcServer.Serve(config.grpcAddr)
+// }
 
 // initDataStore creates a database connection that can in-memory, postgres and scylla
 func initDataStore(config Config) store.Message {
