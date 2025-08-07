@@ -77,10 +77,10 @@ func initCacheMemory(config Config) cache.Cache {
 	return cacheStore
 }
 
-// initPrometheus initialize prometheus metrics
-func initPrometheus(config Config) metric.Metric {
-	var prometheusController metric.Metric
-	if config.metricEnable {
+// // initPrometheus initialize prometheus metrics
+// func initPrometheus(config Config) metric.Metric {
+// 	var prometheusController metric.Metric
+// 	if config.metricEnable {
 		reg := prometheus.NewRegistry() // create new registry for gRPC metrics
 		prometheusController = metric.NewPrometheusController(reg)
 		go prometheusController.Serve(reg, config.metricAddress) // start prometheus controller socket on another port
