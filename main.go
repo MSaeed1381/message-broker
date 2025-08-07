@@ -22,13 +22,13 @@ import (
 // 3. Basic prometheus.yaml metrics ( latency, throughput, etc. ) should be implemented
 // 	  for every base functionality ( publish, subscribe etc. )
 
-func main() {
-	config := DefaultConfig()
-	go initProfiler(config) // create a webserver for profiling
-	msgStore := initDataStore(config)
-	if msgStore != nil {
-		defer msgStore.Close()
-	} // only for persist store in database (for in-memory data store is nil) // close the data store
+// func main() {
+// 	config := DefaultConfig()
+// 	go initProfiler(config) // create a webserver for profiling
+// 	msgStore := initDataStore(config)
+// 	if msgStore != nil {
+// 		defer msgStore.Close()
+// 	} // only for persist store in database (for in-memory data store is nil) // close the data store
 	cacheStore := initCacheMemory(config)                                               // create cache store
 	topicStore := memory.NewTopicInMemory(msgStore)                                     // create new topic store
 	prometheusController := initPrometheus(config)                                      // define metric
