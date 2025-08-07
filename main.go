@@ -99,12 +99,12 @@ func initProfiler(config Config) {
 	}
 }
 
-func initKubernetesClient(config Config) cluster.KubeClient {
-	var kubeClient cluster.KubeClient
-	if config.kubernetesEnable {
-		kubeClient = cluster.NewClient()
-	} else {
-		kubeClient = cluster.NewNoImpl()
+// func initKubernetesClient(config Config) cluster.KubeClient {
+// 	var kubeClient cluster.KubeClient
+// 	if config.kubernetesEnable {
+// 		kubeClient = cluster.NewClient()
+// 	} else {
+// 		kubeClient = cluster.NewNoImpl()
 	}
 	return kubeClient
 }
