@@ -19,19 +19,19 @@ type Message struct {
 	Expiration time.Duration
 }
 
-// Broker The whole implementation should be thread-safe
-// If any problem occurred, return the proper error based on errors.go
-type Broker interface {
-	io.Closer
-	// Publish returns an int as the id of message published.
-	// It should preserve the order. So if we are publishing messages
-	// A, B and C, all subscribers should get these messages as
-	// A, B and C.
-	Publish(ctx context.Context, subject string, msg Message) (uint64, error)
+// // Broker The whole implementation should be thread-safe
+// // If any problem occurred, return the proper error based on errors.go
+// type Broker interface {
+// 	io.Closer
+// 	// Publish returns an int as the id of message published.
+// 	// It should preserve the order. So if we are publishing messages
+// 	// A, B and C, all subscribers should get these messages as
+// 	// A, B and C.
+// 	Publish(ctx context.Context, subject string, msg Message) (uint64, error)
 
-	// Subscribe listens to every publish, and returns the messages to all
-	// subscribed clients ( channels ).
-	// If the context is cancelled, you have to stop sending messages
+// 	// Subscribe listens to every publish, and returns the messages to all
+// 	// subscribed clients ( channels ).
+// 	// If the context is cancelled, you have to stop sending messages
 	// to this subscriber. Do nothing on time-out
 	Subscribe(ctx context.Context, subject string) (<-chan Message, error)
 
