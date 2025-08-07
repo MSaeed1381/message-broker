@@ -92,12 +92,12 @@ func initPrometheus(config Config) metric.Metric {
 }
 
 // initProfiler open a port for profiling
-func initProfiler(config Config) {
-	err := http.ListenAndServe(config.profilerAddress, nil)
-	if err != nil {
-		return
-	}
-}
+// func initProfiler(config Config) {
+// 	err := http.ListenAndServe(config.profilerAddress, nil)
+// 	if err != nil {
+// 		return
+// 	}
+// }
 
 func initKubernetesClient(config Config) cluster.KubeClient {
 	var kubeClient cluster.KubeClient
