@@ -36,13 +36,13 @@ func main() {
 	brokerModule := broker.NewModule(topicStore, cacheStore, config.broker, kubeClient) // create new broker module
 	grpcServer := server.NewBrokerServer(brokerModule, prometheusController)
 	grpcServer.Serve(config.grpcAddr)
-}
+// }
 
-// initDataStore creates a database connection that can in-memory, postgres and scylla
-func initDataStore(config Config) store.Message {
-	var msgStore store.Message
+// // initDataStore creates a database connection that can in-memory, postgres and scylla
+// func initDataStore(config Config) store.Message {
+// 	var msgStore store.Message
 
-	switch config.storeType {
+// 	switch config.storeType {
 	case Postgres:
 		psql, err := postgres.NewPG(context.Background(), config.postgres) // connect to postgres
 		if err != nil {
