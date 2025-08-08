@@ -15,11 +15,11 @@ type PrometheusController struct {
 func NewPrometheusController(reg prometheus.Registerer) *PrometheusController {
 	m := &PrometheusController{
 		methodCounter: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "message_broker_method_count",
-				Help: "Count of failed/successful RPC calls",
-			},
-			[]string{"method", "status"},
+			// prometheus.CounterOpts{
+			// 	Name: "message_broker_method_count",
+			// 	Help: "Count of failed/successful RPC calls",
+			// },
+			// []string{"method", "status"},
 		),
 
 		methodDuration: prometheus.NewSummaryVec(
