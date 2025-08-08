@@ -23,9 +23,9 @@ import (
 // 	  for every base functionality ( publish, subscribe etc. )
 
 func main() {
-	config := DefaultConfig()
-	go initProfiler(config) // create a webserver for profiling
-	msgStore := initDataStore(config)
+	// config := DefaultConfig()
+	// go initProfiler(config) // create a webserver for profiling
+	// msgStore := initDataStore(config)
 	if msgStore != nil {
 		defer msgStore.Close()
 	} // only for persist store in database (for in-memory data store is nil) // close the data store
