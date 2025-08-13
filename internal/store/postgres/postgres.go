@@ -27,7 +27,7 @@ func NewPG(ctx context.Context, conf Config) (*Postgres, error) {
 		}
 
 		config.MaxConns = int32(conf.MaxConnections)
-		config.MinConns = int32(conf.MaxConnections)
+		config.MinConns = int32(conf.MinConns)
 
 		db, err := pgxpool.NewWithConfig(ctx, config)
 		if err != nil {
