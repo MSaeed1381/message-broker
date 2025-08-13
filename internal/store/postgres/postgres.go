@@ -41,10 +41,6 @@ func NewPG(ctx context.Context, conf Config) (*Postgres, error) {
 	return pgInstance, nil
 }
 
-func (p *Postgres) Ping(ctx context.Context) error {
-	return p.db.Ping(ctx)
-}
-
 // Close implement closable interface
 func (p *Postgres) Close() {
 	p.db.Close()
