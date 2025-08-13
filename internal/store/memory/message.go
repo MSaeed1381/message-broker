@@ -20,7 +20,7 @@ func NewMessageInMemory() *MessageInMemory {
 	}
 }
 
-func (m *MessageInMemory) Save(_ context.Context, message *model.Message) (uint64, error) {
+func (m *MessageInMemory) Save(_ context.Context) (uint64, error) {
 	if _, ok := m.MsgStore.Get(message.BrokerMessage.Id); ok {
 		return 0, store.ErrMessageAlreadyExists{ID: message.BrokerMessage.Id}
 	}
