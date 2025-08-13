@@ -32,7 +32,7 @@ func (m *MessageInMemory) Save(_ context.Context, message *model.Message) (uint6
 	return message.BrokerMessage.Id, nil
 }
 
-func (m *MessageInMemory) GetByID(_ context.Context, id uint64) (*model.Message, error) {
+func (m *MessageInMemory) GetByID(_ context.Context, id int64) (*model.Message, error) {
 	message, ok := m.MsgStore.Get(id)
 
 	// message is invalid and didn't publish
