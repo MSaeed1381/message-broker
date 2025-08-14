@@ -83,7 +83,7 @@ func initPrometheus(config Config) metric.Metric {
 	if config.metricEnable {
 		reg := prometheus.NewRegistry() // create new registry for gRPC metrics
 		prometheusController = metric.NewPrometheusController(reg)
-		go prometheusController.Serve(reg, config.metricAddress) // start prometheus controller socket on another port
+	// 	go prometheusController.Serve(reg, config.metricAddress) // start prometheus controller socket on another port
 	} else {
 		prometheusController = &metric.NoImpl{}
 	}
